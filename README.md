@@ -1,1 +1,2 @@
-# raytracer
+# Browser-display of WebAssembly raytracing from Golang
+
