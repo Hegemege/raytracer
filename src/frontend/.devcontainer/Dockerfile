@@ -1,6 +1,6 @@
 FROM mcr.microsoft.com/vscode/devcontainers/javascript-node:14
 
-RUN npm install -g http-server @vue/cli @vue/cli-service-global
+RUN npm install -g create-react-app
 WORKDIR /app
 
-EXPOSE 8080
+EXPOSE 3000
