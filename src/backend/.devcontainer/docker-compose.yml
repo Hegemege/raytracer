@@ -1,0 +1,52 @@
+version: "3.7"
+
+services:
+  vscode:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VARIANT: "1.16"
+        INSTALL_NODE: "true"
+        NODE_VERSION: "lts/*"
+    image: vscode-devcontainer-go
+    volumes:
+      - ../:/workspace
+      # Docker socket to access Docker server
+      - /var/run/docker.sock:/var/run/docker.sock
+      # SSH directory
+      - ~/.ssh:/home/vscode/.ssh
+      - ~/.ssh:/root/.ssh
+      # Git config
+      - ~/.gitconfig:/home/districter/.gitconfig
+      - ~/.gitconfig:/root/.gitconfig
+      # Kubernetes
+      # - ~/.kube:/home/districter/.kube
+      # - ~/.kube:/root/.kube
+    environment:
+      - TZ=
+    cap_add:
+      # For debugging with dlv
+      - SYS_PTRACE
+    security_opt:
+      # For debugging with dlv
+      - seccomp:unconfined
+    entrypoint: zsh -c "while sleep 1000; do :; done"
+  go-hotreload:
+    #restart: unless-stopped
+    build:
+      context: .
+      dockerfile: build.Dockerfile
+    image: vscode-devcontainer-go-hotreload
+    volumes:
+      - ../:/workspace
+    command: bash -c "go mod download && make serve"
+  wasm-serve:
+    image: halverneus/static-file-server:v1.8.3
+    ports:
+      - "8090:8090"
+    volumes:
+      - ../build:/web
+    environment:
+      - PORT=8090
+    

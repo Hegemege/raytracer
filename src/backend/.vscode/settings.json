@@ -7,4 +7,9 @@
         "GOARCH": "wasm",
         "GOOS": "js",
     },
+    "[yaml]": {
+        "editor.insertSpaces": true,
+        "editor.tabSize": 2,
+        "editor.autoIndent": "none"
+    },
 }
