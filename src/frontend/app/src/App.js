@@ -14,6 +14,7 @@ import BaseComponent from "./components/Common/BaseComponent";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import React from "react";
 import { library } from "@fortawesome/fontawesome-svg-core";
+import Renderer from "./components/Renderer";
 
 library.add(faImage);
 
@@ -32,7 +33,7 @@ export default class App extends BaseComponent {
           <Router>
             <Navbar bg="light" expand="lg">
               <Nav className="mr-auto">
-                <Nav.Link as={Link} to="/Renderer">
+                <Nav.Link as={Link} to="/renderer">
                   <FontAwesomeIcon icon={["fas", "image"]} /> Renderer
                 </Nav.Link>
               </Nav>
@@ -40,7 +41,10 @@ export default class App extends BaseComponent {
 
             <Switch>
               <Route exact path="/">
-                <Redirect to="/Renderer" />
+                <Redirect to="/renderer" />
+              </Route>
+              <Route exact path="/renderer">
+                <Renderer></Renderer>
               </Route>
             </Switch>
           </Router>

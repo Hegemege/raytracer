@@ -26,8 +26,11 @@
     -->
     <title>Go -> WebAssembly raytracer</title>
 
-    <!-- Golang wasm executor -->
     <script src="wasm_exec.js"></script>
+		<script>
+      window.gowasm = new Go();
+		</script>
+
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>

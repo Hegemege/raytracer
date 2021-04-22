@@ -48,5 +48,6 @@ services:
     volumes:
       - ../build:/web
     environment:
-      - PORT=8090
+      - "PORT=8090"
+      - "CORS=true"
     

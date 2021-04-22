@@ -3,16 +3,14 @@ package main
 import "syscall/js"
 
 func main() {
-	//c := make(chan struct{}, 0)
-
 	println("Go WebAssembly Initialized")
 
 	js.Global().Set("render", js.FuncOf(render))
 
-	//<-c
+	<-make(chan bool)
 }
 
 func render(this js.Value, args []js.Value) interface{} {
-	println("test")
+	println("render called 2")
 	return nil
 }
