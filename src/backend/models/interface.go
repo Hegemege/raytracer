@@ -1,6 +1,7 @@
 package models
 
 type RenderInterface struct {
-	Width  int
-	Height int
+	Width          int
+	Height         int
+	CameraSettings Camera
 }
