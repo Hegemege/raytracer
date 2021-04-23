@@ -1,6 +1,9 @@
 package main
 
-import "syscall/js"
+import (
+	"fmt"
+	"syscall/js"
+)
 
 func main() {
 	println("Go WebAssembly Initialized")
@@ -12,5 +15,7 @@ func main() {
 
 func render(this js.Value, args []js.Value) interface{} {
 	println("render called 2")
+	fmt.Printf("%v\n", this.Get("name"))
+	fmt.Printf("%v\n", args)
 	return nil
 }

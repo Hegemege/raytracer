@@ -2,6 +2,7 @@ import { Row, Button, Container, Form } from "react-bootstrap";
 
 import BaseComponent from "../components/Common/BaseComponent";
 import React from "react";
+import RendererFrame from "./Common/RendererFrame";
 
 export default class Renderer extends BaseComponent {
   constructor(props) {
@@ -38,7 +39,8 @@ export default class Renderer extends BaseComponent {
       await this.reloadWebAssembly();
     }
 
-    window.render(); // Exposed from golang
+    let output = window.render("param1", "param2"); // Exposed from golang
+    console.log(output);
   };
 
   render() {
@@ -61,6 +63,9 @@ export default class Renderer extends BaseComponent {
           <Button variant="primary" onClick={this.onRenderClicked}>
             Render
           </Button>
+        </Row>
+        <Row>
+          <RendererFrame width="500" height="500"></RendererFrame>
         </Row>
       </Container>
     );

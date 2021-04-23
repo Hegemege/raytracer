@@ -31,7 +31,7 @@ export default class App extends BaseComponent {
       <Container fluid>
         <Col>
           <Router>
-            <Navbar bg="light" expand="lg">
+            <Navbar variant="dark" expand="lg">
               <Nav className="mr-auto">
                 <Nav.Link as={Link} to="/renderer">
                   <FontAwesomeIcon icon={["fas", "image"]} /> Renderer
