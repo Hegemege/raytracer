@@ -4,6 +4,8 @@ import BaseComponent from "../components/Common/BaseComponent";
 import React from "react";
 import RendererFrame from "./Common/RendererFrame";
 
+import MD5 from "crypto-js/md5";
+
 export default class Renderer extends BaseComponent {
   constructor(props) {
     super(props);
@@ -19,8 +21,19 @@ export default class Renderer extends BaseComponent {
   reloadWebAssembly = async () => {
     window.render = undefined;
 
-    let result = await WebAssembly.instantiateStreaming(
-      fetch("http://localhost:8090/main.wasm"),
+    let wasmSource = await fetch("http://localhost:8090/main.wasm");
+    let data = await wasmSource.arrayBuffer();
+
+    // do something with the text response
+    let hex = [...new Uint8Array(data)]
+      .map((x) => x.toString(16).padStart(2, "0"))
+      .join("");
+
+    let md5 = MD5(hex);
+    console.log("WASM MD5:", md5.toString());
+
+    let result = await WebAssembly.instantiate(
+      data,
       window.gowasm.importObject
     );
 
@@ -39,7 +52,12 @@ export default class Renderer extends BaseComponent {
       await this.reloadWebAssembly();
     }
 
-    let output = window.render("param1", "param2"); // Exposed from golang
+    let params = {
+      width: 500,
+      height: 500,
+    };
+
+    let output = window.render(JSON.stringify(params)); // Exposed from golang
     console.log(output);
   };
 
