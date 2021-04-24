@@ -26,7 +26,7 @@ export default class Renderer extends BaseComponent {
     let data = await wasmSource.arrayBuffer();
 
     // Slow, but useful for testing
-    //console.log("WASM MD5:", this.getWasmMd5(data));
+    console.log("WASM MD5:", this.getWasmMd5(data));
 
     let result = await WebAssembly.instantiate(
       data,
@@ -59,8 +59,14 @@ export default class Renderer extends BaseComponent {
     }
 
     let params = {
-      width: 500,
-      height: 500,
+      Width: 640,
+      Height: 480,
+      CameraSettings: {
+        ProjectionPlaneDistance: 0.1,
+        RaysPerPixel: 1,
+        Projection: 0,
+        FieldOfView: 60,
+      },
     };
 
     let outputRaw = window.render(JSON.stringify(params)); // Exposed from golang

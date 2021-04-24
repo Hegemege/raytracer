@@ -34,6 +34,8 @@ func render(this js.Value, args []js.Value) interface{} {
 	result.ImageData = image.NewRGBA(image.Rect(0, 0, context.Width, context.Height))
 	draw.Draw(result.ImageData, result.ImageData.Bounds(), &image.Uniform{color.Black}, image.Point{}, draw.Src)
 
+	context.CameraSettings.SpawnRays(context.Width, context.Height)
+
 	return result.Output()
 }
 
