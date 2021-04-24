@@ -27,6 +27,10 @@ export default class RendererFrame extends BaseComponent {
       renderedData: this.props.imageData.Pix,
     });
 
+    this.updateCanvas();
+  };
+
+  updateCanvas = () => {
     // Load the image data and put it into the canvas
     let context = this.canvasRef.current.getContext("2d");
 
