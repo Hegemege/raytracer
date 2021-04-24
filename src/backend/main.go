@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"image"
+	"image/color"
+	"image/draw"
 	"raytracer/models"
 	"syscall/js"
 )
@@ -28,6 +30,9 @@ func render(this js.Value, args []js.Value) interface{} {
 
 	println("Rendering context:")
 	fmt.Printf("%#v\n", context)
+
+	result.ImageData = image.NewRGBA(image.Rect(0, 0, 500, 500))
+	draw.Draw(result.ImageData, result.ImageData.Bounds(), &image.Uniform{color.Black}, image.Point{}, draw.Src)
 
 	return result.Output()
 }

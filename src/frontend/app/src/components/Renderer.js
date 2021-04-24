@@ -11,6 +11,7 @@ export default class Renderer extends BaseComponent {
     super(props);
     this.state = {
       reloadOnRender: true,
+      imageData: null,
     };
   }
 
@@ -24,13 +25,8 @@ export default class Renderer extends BaseComponent {
     let wasmSource = await fetch("http://localhost:8090/main.wasm");
     let data = await wasmSource.arrayBuffer();
 
-    // do something with the text response
-    let hex = [...new Uint8Array(data)]
-      .map((x) => x.toString(16).padStart(2, "0"))
-      .join("");
-
-    let md5 = MD5(hex);
-    console.log("WASM MD5:", md5.toString());
+    // Slow, but useful for testing
+    //console.log("WASM MD5:", this.getWasmMd5(data));
 
     let result = await WebAssembly.instantiate(
       data,
@@ -47,6 +43,16 @@ export default class Renderer extends BaseComponent {
     });
   };
 
+  getWasmMd5 = (arrayBuffer) => {
+    // do something with the text response
+    let hex = [...new Uint8Array(arrayBuffer)]
+      .map((x) => x.toString(16).padStart(2, "0"))
+      .join("");
+
+    let md5 = MD5(hex);
+    return md5.toString();
+  };
+
   onRenderClicked = async () => {
     if (this.state.reloadOnRender) {
       await this.reloadWebAssembly();
@@ -57,8 +63,15 @@ export default class Renderer extends BaseComponent {
       height: 500,
     };
 
-    let output = window.render(JSON.stringify(params)); // Exposed from golang
+    let outputRaw = window.render(JSON.stringify(params)); // Exposed from golang
+    let output = JSON.parse(outputRaw);
+
     console.log(output);
+
+    await this.setStateAsync({
+      ...this.state,
+      imageData: output.imageData,
+    });
   };
 
   render() {
@@ -83,7 +96,7 @@ export default class Renderer extends BaseComponent {
           </Button>
         </Row>
         <Row>
-          <RendererFrame width="500" height="500"></RendererFrame>
+          <RendererFrame imageData={this.state.imageData}></RendererFrame>
         </Row>
       </Container>
     );
