@@ -29,7 +29,6 @@ type Camera struct {
 }
 
 func (camera *Camera) SpawnRays(resolutionWidth int, resolutionHeight int) []Ray {
-	println("SpawnRays")
 	rayCount := resolutionHeight * resolutionWidth * camera.RaysPerPixel
 	rays := make([]Ray, rayCount)
 
@@ -54,7 +53,7 @@ func (camera *Camera) SpawnRays(resolutionWidth int, resolutionHeight int) []Ray
 		bottom = bottom.Mul(camera.ProjectionPlaneDistance / bottom.Z())
 
 		projectionPlaneTopLeft = mgl32.Vec3{left.X(), top.Y(), camera.ProjectionPlaneDistance}
-		projectionPlaneBottomRight = mgl32.Vec3{right.X(), top.Y(), camera.ProjectionPlaneDistance}
+		projectionPlaneBottomRight = mgl32.Vec3{right.X(), bottom.Y(), camera.ProjectionPlaneDistance}
 	} else {
 		ortographicHalfWidth := camera.OrtographicSize * (float32(resolutionWidth) / float32(resolutionHeight))
 		projectionPlaneTopLeft = mgl32.Vec3{-ortographicHalfWidth, camera.OrtographicSize, camera.ProjectionPlaneDistance}
@@ -70,18 +69,31 @@ func (camera *Camera) SpawnRays(resolutionWidth int, resolutionHeight int) []Ray
 	for j := 0; j < resolutionHeight; j++ {
 		for i := 0; i < resolutionWidth; i++ {
 			var originCameraSpace mgl32.Vec3
-			//var directionCameraSpace mgl32.Vec3
+			var directionCameraSpace mgl32.Vec3
+
+			x := projectionPlaneTopLeft.X() + horizontalStep*float32(i)
+			y := projectionPlaneTopLeft.Y() + verticalStep*float32(j)
+
+			originCameraSpace = mgl32.Vec3{x, y, camera.ProjectionPlaneDistance}
 
 			if camera.Projection == Perspective {
-				originCameraSpace = mgl32.Vec3{0, 0, 0}
+				// Camera local origin is always at 0,0,0 so the normalized
+				// ray origin is it's direction
+				directionCameraSpace = originCameraSpace.Normalize()
 			} else {
-				originCameraSpace = mgl32.Vec3{0, 0, 0}
+				directionCameraSpace = mgl32.Vec3{0, 0, 1}
 			}
 
 			ray := Ray{
+				X:      i,
+				Y:      j,
 				Bounce: 0,
 				Origin: mgl32.TransformCoordinate(
 					originCameraSpace,
+					camera.Transform,
+				),
+				Direction: mgl32.TransformCoordinate(
+					directionCameraSpace,
 					camera.Transform,
 				),
 			}

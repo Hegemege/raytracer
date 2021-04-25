@@ -7,7 +7,10 @@ import (
 	"image/color"
 	"image/draw"
 	"raytracer/models"
+	"raytracer/process"
 	"syscall/js"
+
+	"github.com/go-gl/mathgl/mgl32"
 )
 
 func main() {
@@ -29,12 +32,20 @@ func render(this js.Value, args []js.Value) interface{} {
 	}
 
 	println("Rendering context:")
-	fmt.Printf("%#v\n", context)
+	fmt.Printf("%#v \n", context)
 
+	// Fill with black
 	result.ImageData = image.NewRGBA(image.Rect(0, 0, context.Width, context.Height))
 	draw.Draw(result.ImageData, result.ImageData.Bounds(), &image.Uniform{color.Black}, image.Point{}, draw.Src)
 
-	context.CameraSettings.SpawnRays(context.Width, context.Height)
+	// Spawn initial rays
+	rays := context.CameraSettings.SpawnRays(context.Width, context.Height)
+
+	// Trace
+	for _, ray := range rays {
+		color := process.Trace(context, &ray)
+		result.ImageData.Set(ray.X, ray.Y, color)
+	}
 
 	return result.Output()
 }
@@ -59,6 +70,10 @@ func handleError(err error, result *models.RenderResult) string {
 func parseRenderContext(rawContext string) (*models.RenderContext, error) {
 	context := &models.RenderContext{}
 	err := json.Unmarshal([]byte(rawContext), context)
+
+	if context.CameraSettings.Transform.Trace() == 0 {
+		context.CameraSettings.Transform = mgl32.Ident4()
+	}
 
 	return context, err
 }

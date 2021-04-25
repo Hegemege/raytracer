@@ -12,6 +12,7 @@ export default class Renderer extends BaseComponent {
     this.state = {
       reloadOnRender: true,
       imageData: null,
+      renderKey: 0,
     };
   }
 
@@ -26,7 +27,7 @@ export default class Renderer extends BaseComponent {
     let data = await wasmSource.arrayBuffer();
 
     // Slow, but useful for testing
-    console.log("WASM MD5:", this.getWasmMd5(data));
+    // console.log("WASM MD5:", this.getWasmMd5(data));
 
     let result = await WebAssembly.instantiate(
       data,
@@ -54,6 +55,13 @@ export default class Renderer extends BaseComponent {
   };
 
   onRenderClicked = async () => {
+    // Clear the view
+    await this.setStateAsync({
+      ...this.state,
+      imageData: null,
+      renderKey: this.state.renderKey + 1, // Re-keys the component, forces recreation
+    });
+
     if (this.state.reloadOnRender) {
       await this.reloadWebAssembly();
     }
@@ -71,8 +79,6 @@ export default class Renderer extends BaseComponent {
 
     let outputRaw = window.render(JSON.stringify(params)); // Exposed from golang
     let output = JSON.parse(outputRaw);
-
-    console.log(output);
 
     await this.setStateAsync({
       ...this.state,
@@ -102,7 +108,10 @@ export default class Renderer extends BaseComponent {
           </Button>
         </Row>
         <Row>
-          <RendererFrame imageData={this.state.imageData}></RendererFrame>
+          <RendererFrame
+            key={this.state.renderKey}
+            imageData={this.state.imageData}
+          ></RendererFrame>
         </Row>
       </Container>
     );
