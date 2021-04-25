@@ -67,8 +67,8 @@ export default class Renderer extends BaseComponent {
     }
 
     let params = {
-      Width: 640,
-      Height: 480,
+      Width: 500,
+      Height: 500,
       CameraSettings: {
         ProjectionPlaneDistance: 0.1,
         RaysPerPixel: 1,

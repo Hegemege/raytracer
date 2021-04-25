@@ -63,16 +63,13 @@ func (camera *Camera) SpawnRays(resolutionWidth int, resolutionHeight int) []Ray
 	verticalStep := (projectionPlaneTopLeft.Y() - projectionPlaneBottomRight.Y()) / float32(resolutionHeight)
 	horizontalStep := (projectionPlaneBottomRight.X() - projectionPlaneTopLeft.X()) / float32(resolutionWidth)
 
-	println(verticalStep)
-	println(horizontalStep)
-
 	for j := 0; j < resolutionHeight; j++ {
 		for i := 0; i < resolutionWidth; i++ {
 			var originCameraSpace mgl32.Vec3
 			var directionCameraSpace mgl32.Vec3
 
 			x := projectionPlaneTopLeft.X() + horizontalStep*float32(i)
-			y := projectionPlaneTopLeft.Y() + verticalStep*float32(j)
+			y := projectionPlaneTopLeft.Y() - verticalStep*float32(j)
 
 			originCameraSpace = mgl32.Vec3{x, y, camera.ProjectionPlaneDistance}
 
