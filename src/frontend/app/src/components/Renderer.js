@@ -13,6 +13,10 @@ export default class Renderer extends BaseComponent {
       reloadOnRender: true,
       imageData: null,
       renderKey: 0,
+      params: {
+        width: 500,
+        height: 500,
+      },
     };
   }
 
@@ -44,6 +48,26 @@ export default class Renderer extends BaseComponent {
     });
   };
 
+  handleWidthChanged = async (event) => {
+    await this.setStateAsync({
+      ...this.state,
+      params: {
+        ...this.state.params,
+        width: parseInt(event.target.value),
+      },
+    });
+  };
+
+  handleHeightChanged = async (event) => {
+    await this.setStateAsync({
+      ...this.state,
+      params: {
+        ...this.state.params,
+        height: parseInt(event.target.value),
+      },
+    });
+  };
+
   getWasmMd5 = (arrayBuffer) => {
     // do something with the text response
     let hex = [...new Uint8Array(arrayBuffer)]
@@ -54,7 +78,12 @@ export default class Renderer extends BaseComponent {
     return md5.toString();
   };
 
-  onRenderClicked = async () => {
+  onRenderClicked = async (e) => {
+    e.preventDefault();
+    await this.wasmRender();
+  };
+
+  wasmRender = async () => {
     // Clear the view
     await this.setStateAsync({
       ...this.state,
@@ -67,8 +96,8 @@ export default class Renderer extends BaseComponent {
     }
 
     let params = {
-      Width: 500,
-      Height: 500,
+      Width: this.state.params.width,
+      Height: this.state.params.height,
       CameraSettings: {
         ProjectionPlaneDistance: 0.1,
         RaysPerPixel: 1,
@@ -92,21 +121,50 @@ export default class Renderer extends BaseComponent {
         <Row>
           <h1>Renderer</h1>
         </Row>
-        <Row>
-          <Form.Group controlId="formBasicCheckboxReloadOnRender">
-            <Form.Check
-              type="checkbox"
-              label="Reload WebAssembly on render"
-              checked={this.state.reloadOnRender}
-              onChange={this.handleReloadOnRenderChanged}
-            />
-          </Form.Group>
-        </Row>
-        <Row>
-          <Button variant="primary" onClick={this.onRenderClicked}>
-            Render
-          </Button>
-        </Row>
+        <Form>
+          <Row>
+            <Form.Group controlId="formCheckboxReloadOnRender">
+              <Form.Check
+                type="checkbox"
+                label="Reload WebAssembly on render"
+                checked={this.state.reloadOnRender}
+                onChange={this.handleReloadOnRenderChanged}
+              />
+            </Form.Group>
+          </Row>
+          <Row>
+            <Form.Group controlId="formWidth">
+              <Form.Label>Width</Form.Label>
+              <Form.Control
+                htmlSize="6"
+                type="text"
+                label="Width"
+                defaultValue={this.state.params.width}
+                onChange={this.handleWidthChanged}
+              />
+            </Form.Group>
+
+            <Form.Group controlId="formHeight">
+              <Form.Label>Height</Form.Label>
+              <Form.Control
+                htmlSize="6"
+                type="text"
+                label="Height"
+                defaultValue={this.state.params.height}
+                onChange={this.handleHeightChanged}
+              />
+            </Form.Group>
+          </Row>
+          <Row>
+            <Button
+              variant="primary"
+              type="submit"
+              onClick={this.onRenderClicked}
+            >
+              Render
+            </Button>
+          </Row>
+        </Form>
         <Row>
           <RendererFrame
             key={this.state.renderKey}

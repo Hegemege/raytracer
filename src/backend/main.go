@@ -41,8 +41,6 @@ func render(this js.Value, args []js.Value) interface{} {
 	// Spawn initial rays
 	rays := context.CameraSettings.SpawnRays(context.Width, context.Height)
 
-	fmt.Printf("%#v\n", rays[int(context.Width/2+context.Height*context.Width/2)])
-
 	// Trace
 	for _, ray := range rays {
 		color := process.Trace(context, &ray)
@@ -75,6 +73,13 @@ func parseRenderContext(rawContext string) (*models.RenderContext, error) {
 
 	if context.CameraSettings.Transform.Trace() == 0 {
 		context.CameraSettings.Transform = mgl32.Ident4()
+	}
+
+	if context.Width < 0 {
+		context.Width = 0
+	}
+	if context.Height < 0 {
+		context.Height = 0
 	}
 
 	// DEBUG: Add some basic shapes/materials
