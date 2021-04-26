@@ -32,20 +32,31 @@ export default class RendererFrame extends BaseComponent {
 
   updateCanvas = () => {
     // Load the image data and put it into the canvas
-    let context = this.canvasRef.current.getContext("2d");
 
     let width = this.props.imageData.Rect.Max.X;
     let height = this.props.imageData.Rect.Max.Y;
+    let scale = this.props.scale;
 
-    context.canvas.width = width;
-    context.canvas.height = height;
+    let offscreen = new OffscreenCanvas(width, height);
+    let offscreenContext = offscreen.getContext("2d");
+    let context = this.canvasRef.current.getContext("2d");
 
     let data = Uint8ClampedArray.from(
       this.base64ToArrayBuffer(this.props.imageData.Pix)
     );
     this.imageData = new ImageData(data, width, height);
 
-    context.putImageData(this.imageData, 0, 0);
+    offscreenContext.putImageData(this.imageData, 0, 0);
+
+    context.canvas.width = width * scale;
+    context.canvas.height = height * scale;
+    context.drawImage(
+      offscreen,
+      0,
+      0,
+      context.canvas.width,
+      context.canvas.height
+    );
   };
 
   base64ToHex = (str) => {

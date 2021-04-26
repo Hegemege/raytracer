@@ -21,6 +21,7 @@ export default class Renderer extends BaseComponent {
       params: {
         width: 500,
         height: 500,
+        scale: 1.0,
       },
     };
   }
@@ -30,6 +31,10 @@ export default class Renderer extends BaseComponent {
   };
 
   reloadWebAssembly = async () => {
+    if (this.worker) {
+      this.worker.terminate();
+    }
+
     this.worker = new window.Worker("go_webworker.js");
 
     let wasmSource = await fetch("http://localhost:8090/main.wasm");
@@ -45,21 +50,34 @@ export default class Renderer extends BaseComponent {
   };
 
   handleWidthChanged = async (event) => {
+    let value = parseInt(event.target.value);
     await this.setStateAsync({
       ...this.state,
       params: {
         ...this.state.params,
-        width: parseInt(event.target.value),
+        width: value ? value : 0,
       },
     });
   };
 
   handleHeightChanged = async (event) => {
+    let value = parseInt(event.target.value);
     await this.setStateAsync({
       ...this.state,
       params: {
         ...this.state.params,
-        height: parseInt(event.target.value),
+        height: value ? value : 0,
+      },
+    });
+  };
+
+  handleScaleChanged = async (event) => {
+    let value = parseInt(event.target.value);
+    await this.setStateAsync({
+      ...this.state,
+      params: {
+        ...this.state.params,
+        scale: (value ? value : 0) / 100.0,
       },
     });
   };
@@ -151,8 +169,8 @@ export default class Renderer extends BaseComponent {
             </Form.Group>
           </Row>
           <Row>
-            <Form.Group controlId="formWidth">
-              <Form.Label>Width</Form.Label>
+            <Form.Group controlId="formWidth" className="param-field">
+              <Form.Label>Width px</Form.Label>
               <Form.Control
                 htmlSize="6"
                 type="text"
@@ -162,14 +180,25 @@ export default class Renderer extends BaseComponent {
               />
             </Form.Group>
 
-            <Form.Group controlId="formHeight">
-              <Form.Label>Height</Form.Label>
+            <Form.Group controlId="formHeight" className="param-field">
+              <Form.Label>Height px</Form.Label>
               <Form.Control
                 htmlSize="6"
                 type="text"
                 label="Height"
                 defaultValue={this.state.params.height}
                 onChange={this.handleHeightChanged}
+              />
+            </Form.Group>
+
+            <Form.Group controlId="formScale" className="param-field">
+              <Form.Label>Scale %</Form.Label>
+              <Form.Control
+                htmlSize="6"
+                type="text"
+                label="Scale"
+                defaultValue={parseInt(this.state.params.scale * 100)}
+                onChange={this.handleScaleChanged}
               />
             </Form.Group>
           </Row>
@@ -188,6 +217,7 @@ export default class Renderer extends BaseComponent {
             ref={this.rendererFrameRef}
             key={this.state.renderKey}
             imageData={this.state.imageData}
+            scale={this.state.params.scale}
           ></RendererFrame>
         </Row>
         <Row>
