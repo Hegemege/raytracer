@@ -5,10 +5,15 @@ import React from "react";
 import RendererFrame from "./Common/RendererFrame";
 
 import MD5 from "crypto-js/md5";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+
+//import worker from "../go_webworker";
 
 export default class Renderer extends BaseComponent {
   constructor(props) {
     super(props);
+    this.rendererFrameRef = React.createRef();
+    this.worker = null;
     this.state = {
       reloadOnRender: true,
       imageData: null,
@@ -25,20 +30,11 @@ export default class Renderer extends BaseComponent {
   };
 
   reloadWebAssembly = async () => {
-    window.render = undefined;
+    this.worker = new window.Worker("go_webworker.js");
 
     let wasmSource = await fetch("http://localhost:8090/main.wasm");
     let data = await wasmSource.arrayBuffer();
-
-    // Slow, but useful for testing
-    // console.log("WASM MD5:", this.getWasmMd5(data));
-
-    let result = await WebAssembly.instantiate(
-      data,
-      window.gowasm.importObject
-    );
-
-    window.gowasm.run(result.instance);
+    this.moduleData = data;
   };
 
   handleReloadOnRenderChanged = async (event) => {
@@ -98,7 +94,7 @@ export default class Renderer extends BaseComponent {
     let params = {
       Width: this.state.params.width,
       Height: this.state.params.height,
-      CameraSettings: {
+      Camera: {
         ProjectionPlaneDistance: 0.1,
         RaysPerPixel: 1,
         Projection: 0,
@@ -106,12 +102,34 @@ export default class Renderer extends BaseComponent {
       },
     };
 
-    let outputRaw = window.render(JSON.stringify(params)); // Exposed from golang
-    let output = JSON.parse(outputRaw);
+    // Listen to messages from the worker
+    this.worker.addEventListener("message", async (event) => {
+      if (event.data.message) {
+        console.log("%c [WebWorker] " + event.data.message, "color: orange;");
+      }
 
-    await this.setStateAsync({
-      ...this.state,
-      imageData: output.imageData,
+      if (event.data.done) {
+        await this.setStateAsync({
+          ...this.state,
+          imageData: event.data.output.imageData,
+        });
+      }
+    });
+
+    // Start the worker
+    // Each worker has to compile the source because it is not possible to
+    this.worker.postMessage({
+      module: this.moduleData,
+      params: JSON.stringify(params),
+    });
+  };
+
+  onCopyClicked = async () => {
+    // TODO: Move the RendererFrame with optional hiding?
+    this.rendererFrameRef.current.canvasRef.current.toBlob(async (blob) => {
+      // eslint-disable-next-line no-undef
+      const item = new ClipboardItem({ "image/png": blob });
+      navigator.clipboard.write([item]);
     });
   };
 
@@ -167,9 +185,19 @@ export default class Renderer extends BaseComponent {
         </Form>
         <Row>
           <RendererFrame
+            ref={this.rendererFrameRef}
             key={this.state.renderKey}
             imageData={this.state.imageData}
           ></RendererFrame>
+        </Row>
+        <Row>
+          <Button variant="outline-primary" onClick={this.onCopyClicked}>
+            <FontAwesomeIcon
+              icon={["fas", "copy"]}
+              style={{ marginRight: "0.5rem" }}
+            />
+            Copy
+          </Button>
         </Row>
       </Container>
     );

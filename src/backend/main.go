@@ -39,7 +39,7 @@ func render(this js.Value, args []js.Value) interface{} {
 	draw.Draw(result.ImageData, result.ImageData.Bounds(), &image.Uniform{color.Black}, image.Point{}, draw.Src)
 
 	// Spawn initial rays
-	rays := context.CameraSettings.SpawnRays(context.Width, context.Height)
+	rays := context.Camera.SpawnRays(context.Width, context.Height)
 
 	// Trace
 	for _, ray := range rays {
@@ -71,8 +71,8 @@ func parseRenderContext(rawContext string) (*models.RenderContext, error) {
 	context := &models.RenderContext{}
 	err := json.Unmarshal([]byte(rawContext), context)
 
-	if context.CameraSettings.Transform.Trace() == 0 {
-		context.CameraSettings.Transform = mgl32.Ident4()
+	if context.Camera.Transform.Trace() == 0 {
+		context.Camera.Transform = mgl32.Ident4()
 	}
 
 	if context.Width < 0 {

@@ -1,6 +1,10 @@
 package models
 
-import "math"
+import (
+	"math"
+
+	"github.com/go-gl/mathgl/mgl32"
+)
 
 type Sphere struct {
 	Object
@@ -34,4 +38,9 @@ func (sphere *Sphere) RayIntersect(ray *Ray) float32 {
 		return t1
 	}
 	return t0
+}
+
+func (sphere *Sphere) NormalAt(point mgl32.Vec3) mgl32.Vec3 {
+	centerToPoint := point.Sub(sphere.Position)
+	return centerToPoint.Normalize()
 }

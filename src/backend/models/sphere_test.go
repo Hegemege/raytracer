@@ -101,3 +101,24 @@ func TestRaySphereIntersectionShouldMiss(t *testing.T) {
 		t.Errorf("Ray-sphere intersection not working")
 	}
 }
+
+func TestSphereNormal(t *testing.T) {
+	sphere := Sphere{
+		Object: Object{
+			Position: mgl32.Vec3{0, 0, 5},
+		},
+		Radius: 2,
+	}
+
+	ray := Ray{
+		Origin:    mgl32.Vec3{5, 0, 5},
+		Direction: mgl32.Vec3{-1, 0, 0},
+	}
+
+	distance := sphere.RayIntersect(&ray)
+	hitPoint := ray.Origin.Add(ray.Direction.Mul(distance))
+	normal := sphere.NormalAt(hitPoint)
+	if math.Abs(float64(normal.X()-1)) > 0.001 {
+		t.Errorf("Sphere normal not working")
+	}
+}
