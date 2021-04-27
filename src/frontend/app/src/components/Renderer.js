@@ -27,13 +27,16 @@ export default class Renderer extends BaseComponent {
       params: {
         width: 500,
         height: 500,
-        scale: 1.0,
-        x: -0.25,
-        y: 2.5,
-        z: 4,
+        scale: 100,
+        x: -0.225,
+        y: 2.55,
+        z: 6,
         rx: 0,
         ry: 0,
         rz: 0,
+        projection: 0,
+        fieldOfView: 45,
+        ortographicSize: 3,
       },
       sceneData: null,
       objData: "",
@@ -87,40 +90,19 @@ export default class Renderer extends BaseComponent {
     });
   };
 
-  handleWidthChanged = async (event) => {
+  handleIntParamChanged = async (event, param) => {
     let value = parseInt(event.target.value);
+    let params = {
+      ...this.state.params,
+    };
+    params[param] = value ? value : 0;
     await this.setStateAsync({
       ...this.state,
-      params: {
-        ...this.state.params,
-        width: value ? value : 0,
-      },
+      params: params,
     });
   };
 
-  handleHeightChanged = async (event) => {
-    let value = parseInt(event.target.value);
-    await this.setStateAsync({
-      ...this.state,
-      params: {
-        ...this.state.params,
-        height: value ? value : 0,
-      },
-    });
-  };
-
-  handleScaleChanged = async (event) => {
-    let value = parseInt(event.target.value);
-    await this.setStateAsync({
-      ...this.state,
-      params: {
-        ...this.state.params,
-        scale: (value ? value : 0) / 100.0,
-      },
-    });
-  };
-
-  handleCameraParamChanged = async (event, param) => {
+  handleFloatParamChanged = async (event, param) => {
     let value = parseFloat(event.target.value);
     let params = {
       ...this.state.params,
@@ -129,6 +111,17 @@ export default class Renderer extends BaseComponent {
     await this.setStateAsync({
       ...this.state,
       params: params,
+    });
+  };
+
+  handleProjectionChanged = async (event) => {
+    console.log(this.state.params.projection, event);
+    await this.setStateAsync({
+      ...this.state,
+      params: {
+        ...this.state.params,
+        projection: event.target.options.selectedIndex,
+      },
     });
   };
 
@@ -177,9 +170,9 @@ export default class Renderer extends BaseComponent {
         Transform: cameraTransform,
         ProjectionPlaneDistance: 0.01,
         RaysPerPixel: 1,
-        Projection: 0,
-        OrtographicSize: 5,
-        FieldOfView: 60,
+        Projection: this.state.params.projection,
+        OrtographicSize: this.state.params.ortographicSize,
+        FieldOfView: this.state.params.fieldOfView,
       },
       Settings: {
         DrawSurfaceNormal: true,
@@ -245,7 +238,7 @@ export default class Renderer extends BaseComponent {
                 type="text"
                 label="Width"
                 defaultValue={this.state.params.width}
-                onChange={this.handleWidthChanged}
+                onChange={(e) => this.handleIntParamChanged(e, "width")}
               />
             </Form.Group>
 
@@ -256,7 +249,7 @@ export default class Renderer extends BaseComponent {
                 type="text"
                 label="Height"
                 defaultValue={this.state.params.height}
-                onChange={this.handleHeightChanged}
+                onChange={(e) => this.handleIntParamChanged(e, "height")}
               />
             </Form.Group>
 
@@ -266,8 +259,52 @@ export default class Renderer extends BaseComponent {
                 htmlSize="6"
                 type="text"
                 label="Scale"
-                defaultValue={parseInt(this.state.params.scale * 100)}
-                onChange={this.handleScaleChanged}
+                defaultValue={this.state.params.scale}
+                onChange={(e) => this.handleIntParamChanged(e, "scale")}
+              />
+            </Form.Group>
+
+            <Form.Group controlId="formProjection" className="param-field">
+              <Form.Label>Projection</Form.Label>
+              <Form.Control
+                as="select"
+                defaultValue={this.state.params.projection}
+                onChange={this.handleProjectionChanged}
+              >
+                <option>Perspective</option>
+                <option>Ortographic</option>
+              </Form.Control>
+            </Form.Group>
+
+            <Form.Group
+              hidden={this.state.params.projection !== 0}
+              controlId="formFoV"
+              className="param-field"
+            >
+              <Form.Label>Field of View</Form.Label>
+              <Form.Control
+                htmlSize="6"
+                type="text"
+                label="Height"
+                defaultValue={this.state.params.fieldOfView}
+                onChange={(e) => this.handleIntParamChanged(e, "fieldOfView")}
+              />
+            </Form.Group>
+
+            <Form.Group
+              hidden={this.state.params.projection !== 1}
+              controlId="formOrtographicSize"
+              className="param-field"
+            >
+              <Form.Label>Ortographic Size</Form.Label>
+              <Form.Control
+                htmlSize="6"
+                type="text"
+                label="Height"
+                defaultValue={this.state.params.ortographicSize}
+                onChange={(e) =>
+                  this.handleIntParamChanged(e, "ortographicSize")
+                }
               />
             </Form.Group>
           </Row>
@@ -279,7 +316,7 @@ export default class Renderer extends BaseComponent {
                 type="text"
                 label="Scale"
                 defaultValue={parseFloat(this.state.params.x)}
-                onChange={(e) => this.handleCameraParamChanged(e, "x")}
+                onChange={(e) => this.handleFloatParamChanged(e, "x")}
               />
             </Form.Group>
             <Form.Group controlId="formY" className="param-field">
@@ -289,7 +326,7 @@ export default class Renderer extends BaseComponent {
                 type="text"
                 label="Scale"
                 defaultValue={parseFloat(this.state.params.y)}
-                onChange={(e) => this.handleCameraParamChanged(e, "y")}
+                onChange={(e) => this.handleFloatParamChanged(e, "y")}
               />
             </Form.Group>
             <Form.Group controlId="formZ" className="param-field">
@@ -299,7 +336,7 @@ export default class Renderer extends BaseComponent {
                 type="text"
                 label="Scale"
                 defaultValue={parseFloat(this.state.params.z)}
-                onChange={(e) => this.handleCameraParamChanged(e, "z")}
+                onChange={(e) => this.handleFloatParamChanged(e, "z")}
               />
             </Form.Group>
 
@@ -310,7 +347,7 @@ export default class Renderer extends BaseComponent {
                 type="text"
                 label="Scale"
                 defaultValue={parseFloat(this.state.params.rx)}
-                onChange={(e) => this.handleCameraParamChanged(e, "rx")}
+                onChange={(e) => this.handleFloatParamChanged(e, "rx")}
               />
             </Form.Group>
             <Form.Group controlId="formrY" className="param-field">
@@ -320,7 +357,7 @@ export default class Renderer extends BaseComponent {
                 type="text"
                 label="Scale"
                 defaultValue={parseFloat(this.state.params.ry)}
-                onChange={(e) => this.handleCameraParamChanged(e, "ry")}
+                onChange={(e) => this.handleFloatParamChanged(e, "ry")}
               />
             </Form.Group>
             <Form.Group controlId="formrZ" className="param-field">
@@ -330,7 +367,7 @@ export default class Renderer extends BaseComponent {
                 type="text"
                 label="Scale"
                 defaultValue={parseFloat(this.state.params.rz)}
-                onChange={(e) => this.handleCameraParamChanged(e, "rz")}
+                onChange={(e) => this.handleFloatParamChanged(e, "rz")}
               />
             </Form.Group>
           </Row>

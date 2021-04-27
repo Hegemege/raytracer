@@ -35,7 +35,7 @@ export default class RendererFrame extends BaseComponent {
 
     let width = this.props.imageData.Rect.Max.X;
     let height = this.props.imageData.Rect.Max.Y;
-    let scale = this.props.scale;
+    let scale = this.props.scale / 100.0;
 
     let offscreen = new OffscreenCanvas(width, height);
     let offscreenContext = offscreen.getContext("2d");
