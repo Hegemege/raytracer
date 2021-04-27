@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"image"
 	"image/color"
 	"image/draw"
@@ -11,6 +10,7 @@ import (
 	"syscall/js"
 
 	"github.com/go-gl/mathgl/mgl32"
+	"github.com/udhos/gwob"
 )
 
 func main() {
@@ -26,16 +26,13 @@ func render(this js.Value, args []js.Value) interface{} {
 
 	result := models.RenderResult{}
 
-	println("Rendering context:")
-	fmt.Printf("%#v \n", args[0].String())
-
 	context, err := parseRenderContext(args[0].String())
 	if err != nil {
 		return handleError(err, &result)
 	}
 
-	println("Rendering context:")
-	fmt.Printf("%#v \n", context)
+	//println("Rendering context:")
+	//fmt.Printf("%#v \n", context)
 
 	// Fill with black
 	result.ImageData = image.NewRGBA(image.Rect(0, 0, context.Width, context.Height))
@@ -75,6 +72,9 @@ func handleError(err error, result *models.RenderResult) string {
 func parseRenderContext(rawContext string) (*models.RenderContext, error) {
 	context := &models.RenderContext{}
 	err := json.Unmarshal([]byte(rawContext), context)
+	if err != nil {
+		return context, err
+	}
 
 	if context.Camera.Transform.Trace() == 0 {
 		context.Camera.Transform = mgl32.Ident4()
@@ -88,6 +88,20 @@ func parseRenderContext(rawContext string) (*models.RenderContext, error) {
 	}
 
 	context.Scene.LinkMaterials()
+	if len(context.ObjBuffer) > 0 && len(context.MtlBuffer) > 0 {
+		obj, err := gwob.NewObjFromBuf("scene", []byte(context.ObjBuffer), nil)
+		if err != nil {
+			return context, err
+		}
+
+		mtl, err := gwob.ReadMaterialLibFromBuf([]byte(context.MtlBuffer), nil)
+		if err != nil {
+			return context, err
+		}
+
+		context.Obj = obj
+		context.Mtl = &mtl
+	}
 
 	return context, err
 }

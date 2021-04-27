@@ -24,12 +24,18 @@ export default class Renderer extends BaseComponent {
         scale: 1.0,
       },
       sceneData: null,
+      objData: "",
+      mtlData: "",
     };
   }
 
   componentDidMount = async () => {
     await this.reloadWebAssembly();
     await this.loadScene("scenes/simple.json");
+    await this.loadObj(
+      "scenes/obj/cornell-box/cornell-box.obj",
+      "scenes/obj/cornell-box/cornell-box.mtl"
+    );
   };
 
   reloadWebAssembly = async () => {
@@ -48,6 +54,18 @@ export default class Renderer extends BaseComponent {
     let request = await fetch(sceneFile);
     let data = await request.json();
     await this.setStateAsync({ ...this.state, sceneData: data });
+  };
+
+  loadObj = async (objFile, mtlFile) => {
+    let objRequest = await fetch(objFile);
+    let mtlRequest = await fetch(mtlFile);
+    let objData = await objRequest.text();
+    let mtlData = await mtlRequest.text();
+    await this.setStateAsync({
+      ...this.state,
+      objData: objData,
+      mtlData: mtlData,
+    });
   };
 
   handleReloadOnRenderChanged = async (event) => {
@@ -130,6 +148,8 @@ export default class Renderer extends BaseComponent {
         DrawSurfaceNormal: true,
       },
       Scene: this.state.sceneData,
+      ObjBuffer: this.state.objData,
+      MtlBuffer: this.state.mtlData,
     };
 
     // Listen to messages from the worker
