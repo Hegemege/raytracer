@@ -3,6 +3,7 @@ package models
 import "image/color"
 
 type Material struct {
-	Albedo   color.Color
+	ID       int
+	Albedo   color.RGBA
 	Specular float32
 }

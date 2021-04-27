@@ -1,0 +1,21 @@
+{
+  "Spheres": [
+    {
+      "Position": [0, 0, 5],
+      "MaterialID": 0,
+      "Radius": 1
+    }
+  ],
+  "Materials": [
+    {
+      "ID": 0,
+      "Albedo": {
+        "R": 255,
+        "G": 0,
+        "B": 0,
+        "A": 255
+      },
+      "Specular": 0
+    }
+  ]
+}

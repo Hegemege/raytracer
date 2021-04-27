@@ -26,6 +26,9 @@ func render(this js.Value, args []js.Value) interface{} {
 
 	result := models.RenderResult{}
 
+	println("Rendering context:")
+	fmt.Printf("%#v \n", args[0].String())
+
 	context, err := parseRenderContext(args[0].String())
 	if err != nil {
 		return handleError(err, &result)
@@ -64,6 +67,8 @@ func handleError(err error, result *models.RenderResult) string {
 
 	result.ImageData = image.NewRGBA(image.Rect(0, 0, 500, 500))
 
+	println("ERROR:", result.Message)
+
 	return result.Output()
 }
 
@@ -82,23 +87,7 @@ func parseRenderContext(rawContext string) (*models.RenderContext, error) {
 		context.Height = 0
 	}
 
-	// DEBUG: Add some basic shapes/materials
-	material := models.Material{
-		Albedo:   color.RGBA{R: 255, G: 0, B: 0, A: 255},
-		Specular: 0,
-	}
-
-	context.Scene = models.Scene{
-		Spheres: []models.Sphere{
-			{
-				Object: models.Object{
-					Position: mgl32.Vec3{0, 0, 5},
-					Material: &material,
-				},
-				Radius: 1,
-			},
-		},
-	}
+	context.Scene.LinkMaterials()
 
 	return context, err
 }

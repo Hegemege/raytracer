@@ -23,11 +23,13 @@ export default class Renderer extends BaseComponent {
         height: 500,
         scale: 1.0,
       },
+      sceneData: null,
     };
   }
 
   componentDidMount = async () => {
     await this.reloadWebAssembly();
+    await this.loadScene("scenes/simple.json");
   };
 
   reloadWebAssembly = async () => {
@@ -40,6 +42,12 @@ export default class Renderer extends BaseComponent {
     let wasmSource = await fetch("http://localhost:8090/main.wasm");
     let data = await wasmSource.arrayBuffer();
     this.moduleData = data;
+  };
+
+  loadScene = async (sceneFile) => {
+    let request = await fetch(sceneFile);
+    let data = await request.json();
+    await this.setStateAsync({ ...this.state, sceneData: data });
   };
 
   handleReloadOnRenderChanged = async (event) => {
@@ -118,6 +126,10 @@ export default class Renderer extends BaseComponent {
         Projection: 0,
         FieldOfView: 60,
       },
+      Settings: {
+        DrawSurfaceNormal: true,
+      },
+      Scene: this.state.sceneData,
     };
 
     // Listen to messages from the worker
