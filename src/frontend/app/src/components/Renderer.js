@@ -7,7 +7,13 @@ import RendererFrame from "./Common/RendererFrame";
 import MD5 from "crypto-js/md5";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
-//import worker from "../go_webworker";
+import {
+  translate,
+  rotateAroundXAxis,
+  rotateAroundYAxis,
+  rotateAroundZAxis,
+  multiplyMatrices,
+} from "../utility/matrix";
 
 export default class Renderer extends BaseComponent {
   constructor(props) {
@@ -22,6 +28,12 @@ export default class Renderer extends BaseComponent {
         width: 500,
         height: 500,
         scale: 1.0,
+        x: -0.25,
+        y: 2.5,
+        z: 4,
+        rx: 0,
+        ry: 0,
+        rz: 0,
       },
       sceneData: null,
       objData: "",
@@ -31,7 +43,7 @@ export default class Renderer extends BaseComponent {
 
   componentDidMount = async () => {
     await this.reloadWebAssembly();
-    await this.loadScene("scenes/simple.json");
+    await this.loadScene("scenes/simple-spheres.json");
     await this.loadObj(
       "scenes/obj/cornell-box/cornell-box.obj",
       "scenes/obj/cornell-box/cornell-box.mtl"
@@ -108,6 +120,18 @@ export default class Renderer extends BaseComponent {
     });
   };
 
+  handleCameraParamChanged = async (event, param) => {
+    let value = parseFloat(event.target.value);
+    let params = {
+      ...this.state.params,
+    };
+    params[param] = value ? value : 0;
+    await this.setStateAsync({
+      ...this.state,
+      params: params,
+    });
+  };
+
   getWasmMd5 = (arrayBuffer) => {
     // do something with the text response
     let hex = [...new Uint8Array(arrayBuffer)]
@@ -135,13 +159,26 @@ export default class Renderer extends BaseComponent {
       await this.reloadWebAssembly();
     }
 
+    let x = this.state.params.x;
+    let y = this.state.params.y;
+    let z = this.state.params.z;
+    let rx = (this.state.params.rx * Math.PI) / 180.0;
+    let ry = (this.state.params.ry * Math.PI) / 180.0;
+    let rz = (this.state.params.rz * Math.PI) / 180.0;
+    let cameraTransform = translate(x, y, z);
+    cameraTransform = multiplyMatrices(cameraTransform, rotateAroundXAxis(rx));
+    cameraTransform = multiplyMatrices(cameraTransform, rotateAroundYAxis(ry));
+    cameraTransform = multiplyMatrices(cameraTransform, rotateAroundZAxis(rz));
+
     let params = {
       Width: this.state.params.width,
       Height: this.state.params.height,
       Camera: {
-        ProjectionPlaneDistance: 0.1,
+        Transform: cameraTransform,
+        ProjectionPlaneDistance: 0.01,
         RaysPerPixel: 1,
         Projection: 0,
+        OrtographicSize: 5,
         FieldOfView: 60,
       },
       Settings: {
@@ -231,6 +268,69 @@ export default class Renderer extends BaseComponent {
                 label="Scale"
                 defaultValue={parseInt(this.state.params.scale * 100)}
                 onChange={this.handleScaleChanged}
+              />
+            </Form.Group>
+          </Row>
+          <Row>
+            <Form.Group controlId="formX" className="param-field">
+              <Form.Label>X</Form.Label>
+              <Form.Control
+                htmlSize="6"
+                type="text"
+                label="Scale"
+                defaultValue={parseFloat(this.state.params.x)}
+                onChange={(e) => this.handleCameraParamChanged(e, "x")}
+              />
+            </Form.Group>
+            <Form.Group controlId="formY" className="param-field">
+              <Form.Label>Y</Form.Label>
+              <Form.Control
+                htmlSize="6"
+                type="text"
+                label="Scale"
+                defaultValue={parseFloat(this.state.params.y)}
+                onChange={(e) => this.handleCameraParamChanged(e, "y")}
+              />
+            </Form.Group>
+            <Form.Group controlId="formZ" className="param-field">
+              <Form.Label>Z</Form.Label>
+              <Form.Control
+                htmlSize="6"
+                type="text"
+                label="Scale"
+                defaultValue={parseFloat(this.state.params.z)}
+                onChange={(e) => this.handleCameraParamChanged(e, "z")}
+              />
+            </Form.Group>
+
+            <Form.Group controlId="formrX" className="param-field">
+              <Form.Label>rX</Form.Label>
+              <Form.Control
+                htmlSize="6"
+                type="text"
+                label="Scale"
+                defaultValue={parseFloat(this.state.params.rx)}
+                onChange={(e) => this.handleCameraParamChanged(e, "rx")}
+              />
+            </Form.Group>
+            <Form.Group controlId="formrY" className="param-field">
+              <Form.Label>rY</Form.Label>
+              <Form.Control
+                htmlSize="6"
+                type="text"
+                label="Scale"
+                defaultValue={parseFloat(this.state.params.ry)}
+                onChange={(e) => this.handleCameraParamChanged(e, "ry")}
+              />
+            </Form.Group>
+            <Form.Group controlId="formrZ" className="param-field">
+              <Form.Label>rZ</Form.Label>
+              <Form.Control
+                htmlSize="6"
+                type="text"
+                label="Scale"
+                defaultValue={parseFloat(this.state.params.rz)}
+                onChange={(e) => this.handleCameraParamChanged(e, "rz")}
               />
             </Form.Group>
           </Row>

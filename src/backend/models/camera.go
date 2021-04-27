@@ -66,33 +66,28 @@ func (camera *Camera) SpawnRays(resolutionWidth int, resolutionHeight int) []Ray
 	for j := 0; j < resolutionHeight; j++ {
 		for i := 0; i < resolutionWidth; i++ {
 			var originCameraSpace mgl32.Vec3
-			var directionCameraSpace mgl32.Vec3
+			var dir mgl32.Vec3
 
 			x := projectionPlaneTopLeft.X() + horizontalStep*float32(i)
 			y := projectionPlaneTopLeft.Y() - verticalStep*float32(j)
 
-			originCameraSpace = mgl32.Vec3{x, y, camera.ProjectionPlaneDistance}
+			originCameraSpace = mgl32.Vec3{x, y, -camera.ProjectionPlaneDistance}
+			origin := mgl32.TransformCoordinate(originCameraSpace, camera.Transform)
 
 			if camera.Projection == Perspective {
 				// Camera local origin is always at 0,0,0 so the normalized
 				// ray origin is it's direction
-				directionCameraSpace = originCameraSpace.Normalize()
+				dir = origin.Sub(camera.Transform.Col(3).Vec3()).Normalize()
 			} else {
-				directionCameraSpace = mgl32.Vec3{0, 0, 1}
+				dir = mgl32.TransformCoordinate(mgl32.Vec3{0, 0, -1}, camera.Transform).Sub(camera.Transform.Col(3).Vec3()).Normalize()
 			}
 
 			ray := Ray{
-				X:      i,
-				Y:      j,
-				Bounce: 0,
-				Origin: mgl32.TransformCoordinate(
-					originCameraSpace,
-					camera.Transform,
-				),
-				Direction: mgl32.TransformCoordinate(
-					directionCameraSpace,
-					camera.Transform,
-				),
+				X:         i,
+				Y:         j,
+				Bounce:    0,
+				Origin:    origin,
+				Direction: dir,
 			}
 
 			rays[j*resolutionWidth+i] = ray
