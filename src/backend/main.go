@@ -48,7 +48,7 @@ func render(this js.Value, args []js.Value) interface{} {
 	progressUpdate(1.0, "spawnRays")
 
 	progressUpdate(0.0, "trace")
-	updateInterval := int(float32(len(rays)) / 50.0)
+	updateInterval := int(float32(len(rays)) / 100.0)
 	updateIndex := 0
 	// Trace
 	for i, ray := range rays {
