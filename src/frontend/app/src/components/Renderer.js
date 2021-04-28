@@ -38,8 +38,9 @@ export default class Renderer extends BaseComponent {
         projection: 0,
         fieldOfView: 45,
         ortographicSize: 3,
-        bounces: 2,
+        bounces: 1,
         bounceRays: 10,
+        raysPerPixel: 1,
       },
       sceneData: null,
       objData: "",
@@ -174,7 +175,7 @@ export default class Renderer extends BaseComponent {
       Camera: {
         Transform: cameraTransform,
         ProjectionPlaneDistance: 0.01,
-        RaysPerPixel: 1,
+        RaysPerPixel: this.state.params.raysPerPixel,
         Projection: this.state.params.projection,
         OrtographicSize: this.state.params.ortographicSize,
         FieldOfView: this.state.params.fieldOfView,
@@ -335,6 +336,17 @@ export default class Renderer extends BaseComponent {
                 onChange={(e) =>
                   this.handleIntParamChanged(e, "ortographicSize")
                 }
+              />
+            </Form.Group>
+
+            <Form.Group controlId="formRaysPerPixel" className="param-field">
+              <Form.Label>Rays Per Pixel</Form.Label>
+              <Form.Control
+                htmlSize="6"
+                type="text"
+                label="Rays Per Pixel"
+                defaultValue={this.state.params.raysPerPixel}
+                onChange={(e) => this.handleIntParamChanged(e, "raysPerPixel")}
               />
             </Form.Group>
 

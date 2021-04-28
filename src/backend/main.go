@@ -50,6 +50,8 @@ func render(this js.Value, args []js.Value) interface{} {
 	progressUpdate(0.0, "trace")
 	updateInterval := int(float32(len(rays)) / 100.0)
 	updateIndex := 0
+
+	println("Initial rays", len(rays))
 	// Trace
 	for i, ray := range rays {
 		if i > updateIndex+updateInterval {
@@ -58,8 +60,18 @@ func render(this js.Value, args []js.Value) interface{} {
 			progressUpdate(progress, "trace")
 		}
 
-		color := process.Trace(context, &ray)
-		result.ImageData.Set(ray.X, ray.Y, color)
+		rayColor := process.Trace(context, &ray)
+		r, g, b, _ := result.ImageData.At(ray.X, ray.Y).RGBA()
+		r += uint32(float32(rayColor.R) / float32(context.Camera.RaysPerPixel))
+		g += uint32(float32(rayColor.G) / float32(context.Camera.RaysPerPixel))
+		b += uint32(float32(rayColor.B) / float32(context.Camera.RaysPerPixel))
+
+		result.ImageData.Set(ray.X, ray.Y, color.RGBA{
+			R: uint8(r),
+			G: uint8(g),
+			B: uint8(b),
+			A: 255,
+		})
 	}
 	progressUpdate(1.0, "trace")
 

@@ -2,6 +2,7 @@ package models
 
 import (
 	"math"
+	"math/rand"
 
 	"github.com/go-gl/mathgl/mgl32"
 )
@@ -63,34 +64,42 @@ func (camera *Camera) SpawnRays(resolutionWidth int, resolutionHeight int) []Ray
 	verticalStep := (projectionPlaneTopLeft.Y() - projectionPlaneBottomRight.Y()) / float32(resolutionHeight)
 	horizontalStep := (projectionPlaneBottomRight.X() - projectionPlaneTopLeft.X()) / float32(resolutionWidth)
 
+	ri := 0
 	for j := 0; j < resolutionHeight; j++ {
 		for i := 0; i < resolutionWidth; i++ {
-			var originCameraSpace mgl32.Vec3
-			var dir mgl32.Vec3
+			for rpp := 0; rpp < camera.RaysPerPixel; rpp++ {
 
-			x := projectionPlaneTopLeft.X() + horizontalStep*float32(i)
-			y := projectionPlaneTopLeft.Y() - verticalStep*float32(j)
+				var originCameraSpace mgl32.Vec3
+				var dir mgl32.Vec3
 
-			originCameraSpace = mgl32.Vec3{x, y, -camera.ProjectionPlaneDistance}
-			origin := mgl32.TransformCoordinate(originCameraSpace, camera.Transform)
+				rx := rand.Float32()*0.5 - 1
+				ry := rand.Float32()*0.5 - 1
 
-			if camera.Projection == Perspective {
-				// Camera local origin is always at 0,0,0 so the normalized
-				// ray origin is it's direction
-				dir = origin.Sub(camera.Transform.Col(3).Vec3()).Normalize()
-			} else {
-				dir = mgl32.TransformCoordinate(mgl32.Vec3{0, 0, -1}, camera.Transform).Sub(camera.Transform.Col(3).Vec3()).Normalize()
+				x := projectionPlaneTopLeft.X() + horizontalStep*(float32(i)+rx)
+				y := projectionPlaneTopLeft.Y() - verticalStep*(float32(j)+ry)
+
+				originCameraSpace = mgl32.Vec3{x, y, -camera.ProjectionPlaneDistance}
+				origin := mgl32.TransformCoordinate(originCameraSpace, camera.Transform)
+
+				if camera.Projection == Perspective {
+					// Camera local origin is always at 0,0,0 so the normalized
+					// ray origin is it's direction
+					dir = origin.Sub(camera.Transform.Col(3).Vec3()).Normalize()
+				} else {
+					dir = mgl32.TransformCoordinate(mgl32.Vec3{0, 0, -1}, camera.Transform).Sub(camera.Transform.Col(3).Vec3()).Normalize()
+				}
+
+				ray := Ray{
+					X:         i,
+					Y:         j,
+					Bounce:    0,
+					Origin:    origin,
+					Direction: dir,
+				}
+
+				rays[ri] = ray
+				ri++
 			}
-
-			ray := Ray{
-				X:         i,
-				Y:         j,
-				Bounce:    0,
-				Origin:    origin,
-				Direction: dir,
-			}
-
-			rays[j*resolutionWidth+i] = ray
 		}
 	}
 
