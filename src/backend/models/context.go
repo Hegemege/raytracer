@@ -14,4 +14,6 @@ type RenderContext struct {
 	MaterialLib   *gwob.MaterialLib
 	DebugMaterial *gwob.Material
 	Triangles     []Triangle
+	BounceLimit   uint8
+	BounceRays    int
 }

@@ -180,7 +180,7 @@ export default class Renderer extends BaseComponent {
       Settings: {
         DrawSurfaceNormal: true,
       },
-      Scene: this.state.sceneData,
+      Scene: {}, //this.state.sceneData,
       ObjBuffer: this.state.objData,
       MtlBuffer: this.state.mtlData,
     };
