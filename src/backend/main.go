@@ -27,10 +27,16 @@ func render(this js.Value, args []js.Value) interface{} {
 
 	result := models.RenderResult{}
 
+	progressUpdate(0.0, "parseRenderContext")
+
 	context, err := parseRenderContext(args[0].String())
 	if err != nil {
 		return handleError(err, &result)
 	}
+
+	progressUpdate(1.0, "parseRenderContext")
+
+	progressUpdate(0.0, "spawnRays")
 
 	// Fill with black
 	result.ImageData = image.NewRGBA(image.Rect(0, 0, context.Width, context.Height))
@@ -39,13 +45,45 @@ func render(this js.Value, args []js.Value) interface{} {
 	// Spawn initial rays
 	rays := context.Camera.SpawnRays(context.Width, context.Height)
 
+	progressUpdate(1.0, "spawnRays")
+
+	progressUpdate(0.0, "trace")
+	updateInterval := int(float32(len(rays)) / 50.0)
+	updateIndex := 0
 	// Trace
-	for _, ray := range rays {
+	for i, ray := range rays {
+		if i > updateIndex+updateInterval {
+			updateIndex = i
+			progress := float32(updateIndex) / float32(len(rays))
+			progressUpdate(progress, "trace")
+		}
+
 		color := process.Trace(context, &ray)
 		result.ImageData.Set(ray.X, ray.Y, color)
 	}
+	progressUpdate(1.0, "trace")
 
-	return result.Output()
+	progressUpdate(0.0, "output")
+	output := result.Output()
+	progressUpdate(1.0, "output")
+
+	return output
+}
+
+func progressUpdate(progress float32, event string) {
+	data := struct {
+		Progress float32 `json:"progress"`
+		Event    string  `json:"event"`
+	}{
+		progress, event,
+	}
+
+	raw, err := json.Marshal(data)
+	if err != nil {
+		panic(err)
+	}
+
+	js.Global().Call("progressUpdate", string(raw))
 }
 
 func handleError(err error, result *models.RenderResult) string {

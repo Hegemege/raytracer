@@ -81,8 +81,8 @@ export default class RendererFrame extends BaseComponent {
 
   render() {
     return (
-      <div className="renderer-frame">
-        <canvas ref={this.canvasRef} />
+      <div>
+        <canvas className="renderer-frame" ref={this.canvasRef} />
       </div>
     );
   }

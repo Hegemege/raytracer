@@ -1,8 +1,9 @@
-import { Row, Button, Container, Form } from "react-bootstrap";
+import { Row, Button, Container, Form, Col } from "react-bootstrap";
 
 import BaseComponent from "../components/Common/BaseComponent";
 import React from "react";
 import RendererFrame from "./Common/RendererFrame";
+import RendererStats from "./Common/RendererStats";
 
 import MD5 from "crypto-js/md5";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -41,6 +42,7 @@ export default class Renderer extends BaseComponent {
       sceneData: null,
       objData: "",
       mtlData: "",
+      renderEventData: {},
     };
   }
 
@@ -145,6 +147,7 @@ export default class Renderer extends BaseComponent {
     await this.setStateAsync({
       ...this.state,
       imageData: null,
+      renderEventData: {},
       renderKey: this.state.renderKey + 1, // Re-keys the component, forces recreation
     });
 
@@ -184,11 +187,34 @@ export default class Renderer extends BaseComponent {
 
     // Listen to messages from the worker
     this.worker.addEventListener("message", async (event) => {
-      if (event.data.message) {
+      // Messages from the WebWorker JS side
+      if (event.data.logMessage) {
         console.log("%c [WebWorker] " + event.data.message, "color: orange;");
+        return;
+      }
+
+      if (event.data.progressUpdate) {
+        let renderEventData = this.state.renderEventData;
+
+        let key = event.data.data.event;
+        let progress = event.data.data.progress;
+
+        if (!(key in renderEventData)) {
+          renderEventData[key] = {};
+          renderEventData[key].startTime = Date.now();
+        }
+        renderEventData[key].timer =
+          Date.now() - renderEventData[key].startTime;
+        renderEventData[key].progress = progress;
+
+        await this.setStateAsync({
+          ...this.state,
+          renderEventData: renderEventData,
+        });
       }
 
       if (event.data.done) {
+        // Completion of the WebWorker
         await this.setStateAsync({
           ...this.state,
           imageData: event.data.output.imageData,
@@ -382,12 +408,17 @@ export default class Renderer extends BaseComponent {
           </Row>
         </Form>
         <Row>
-          <RendererFrame
-            ref={this.rendererFrameRef}
-            key={this.state.renderKey}
-            imageData={this.state.imageData}
-            scale={this.state.params.scale}
-          ></RendererFrame>
+          <Col>
+            <RendererFrame
+              ref={this.rendererFrameRef}
+              key={this.state.renderKey}
+              imageData={this.state.imageData}
+              scale={this.state.params.scale}
+            ></RendererFrame>
+          </Col>
+          <Col>
+            <RendererStats data={this.state.renderEventData}></RendererStats>
+          </Col>
         </Row>
         <Row>
           <Button variant="outline-primary" onClick={this.onCopyClicked}>

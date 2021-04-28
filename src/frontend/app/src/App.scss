@@ -9,3 +9,16 @@
 .param-field {
   margin-right: 0.5rem;
 }
+
+.render-stats {
+  text-align: left;
+  white-space: nowrap;
+}
+
+.render-stat-row,
+.render-stat-header-row,
+.render-stat-total-row {
+  height: 2rem;
+  margin-right: 0px;
+  margin-left: 0px;
+}

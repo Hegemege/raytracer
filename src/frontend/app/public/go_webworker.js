@@ -3,12 +3,21 @@
 // eslint-disable-next-line no-undef
 importScripts("wasm_exec.js");
 
+// eslint-disable-next-line no-unused-vars
+function progressUpdate(params) {
+  postMessage({
+    progressUpdate: true,
+    data: JSON.parse(params),
+  });
+}
+
 addEventListener(
   "message",
   async (e) => {
     // Sending logging events to main thread
     let log = (line) => {
       postMessage({
+        logMessage: true,
         message: line,
       });
     };
