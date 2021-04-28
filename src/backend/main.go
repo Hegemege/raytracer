@@ -112,9 +112,6 @@ func parseRenderContext(rawContext string) (*models.RenderContext, error) {
 		return context, err
 	}
 
-	context.BounceLimit = 1
-	context.BounceRays = 100
-
 	if math.Abs(float64(context.Camera.Transform.Trace())) < 0.001 {
 		context.Camera.Transform = mgl32.Ident4()
 	}

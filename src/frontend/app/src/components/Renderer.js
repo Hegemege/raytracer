@@ -38,6 +38,8 @@ export default class Renderer extends BaseComponent {
         projection: 0,
         fieldOfView: 45,
         ortographicSize: 3,
+        bounces: 2,
+        bounceRays: 10,
       },
       sceneData: null,
       objData: "",
@@ -180,6 +182,8 @@ export default class Renderer extends BaseComponent {
       Settings: {
         DrawSurfaceNormal: true,
       },
+      BounceLimit: this.state.params.bounces,
+      BounceRays: this.state.params.bounceRays,
       Scene: {}, //this.state.sceneData,
       ObjBuffer: this.state.objData,
       MtlBuffer: this.state.mtlData,
@@ -331,6 +335,28 @@ export default class Renderer extends BaseComponent {
                 onChange={(e) =>
                   this.handleIntParamChanged(e, "ortographicSize")
                 }
+              />
+            </Form.Group>
+
+            <Form.Group controlId="formBounces" className="param-field">
+              <Form.Label>Bounces</Form.Label>
+              <Form.Control
+                htmlSize="6"
+                type="text"
+                label="Bounces"
+                defaultValue={this.state.params.bounces}
+                onChange={(e) => this.handleIntParamChanged(e, "bounces")}
+              />
+            </Form.Group>
+
+            <Form.Group controlId="formBounceRays" className="param-field">
+              <Form.Label>Bounce Rays</Form.Label>
+              <Form.Control
+                htmlSize="6"
+                type="text"
+                label="Bounce Rays"
+                defaultValue={this.state.params.bounceRays}
+                onChange={(e) => this.handleIntParamChanged(e, "bounceRays")}
               />
             </Form.Group>
           </Row>
