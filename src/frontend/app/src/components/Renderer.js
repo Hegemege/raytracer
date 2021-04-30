@@ -169,7 +169,7 @@ export default class Renderer extends BaseComponent {
     cameraTransform = multiplyMatrices(cameraTransform, rotateAroundYAxis(ry));
     cameraTransform = multiplyMatrices(cameraTransform, rotateAroundZAxis(rz));
 
-    let params = {
+    let initializeParams = {
       Width: this.state.params.width,
       Height: this.state.params.height,
       Camera: {
@@ -188,6 +188,18 @@ export default class Renderer extends BaseComponent {
       Scene: {}, //this.state.sceneData,
       ObjBuffer: this.state.objData,
       MtlBuffer: this.state.mtlData,
+      WorkerId: 0,
+    };
+
+    let rngSeed = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER);
+
+    let renderParams = {
+      WorkerId: 0,
+      XOffset: 0,
+      YOffset: 0,
+      Width: this.state.params.width,
+      Height: this.state.params.height,
+      RNGSeed: rngSeed,
     };
 
     // Listen to messages from the worker
@@ -225,13 +237,24 @@ export default class Renderer extends BaseComponent {
           imageData: event.data.output.imageData,
         });
       }
+
+      if (event.data.initDone) {
+        this.worker.postMessage({
+          workerId: 0,
+          module: this.moduleData,
+          type: "render",
+          renderParams: JSON.stringify(renderParams),
+        });
+      }
     });
 
     // Start the worker
     // Each worker has to compile the source because it is not possible to
     this.worker.postMessage({
+      workerId: 0,
       module: this.moduleData,
-      params: JSON.stringify(params),
+      type: "initialize",
+      initializeParams: JSON.stringify(initializeParams),
     });
   };
 

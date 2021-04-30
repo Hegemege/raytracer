@@ -11,46 +11,72 @@ function progressUpdate(params) {
   });
 }
 
-addEventListener(
-  "message",
-  async (e) => {
+{
+  let go = null;
+  let workerId = null;
+  let renderFunc = null;
+
+  onmessage = async (e) => {
     // Sending logging events to main thread
-    let log = (line) => {
+    let log = (wid, ...args) => {
       postMessage({
         logMessage: true,
-        message: line,
+        message: args.join(" "),
+        workerId: wid,
       });
     };
 
-    let compileStartTime = Date.now();
-    log("Initializing golang wasm");
+    if (e.data.type === "initialize") {
+      workerId = e.data.workerId;
+      log(workerId, "Initializing worker", workerId);
+      let compileStartTime = Date.now();
+      log(workerId, "Initializing golang wasm");
 
-    // eslint-disable-next-line no-undef
-    let go = new Go();
+      // eslint-disable-next-line no-undef
+      go = new Go();
 
-    let result = await WebAssembly.instantiate(e.data.module, go.importObject);
+      let result = await WebAssembly.instantiate(
+        e.data.module,
+        go.importObject
+      );
 
-    go.run(result.instance);
+      go.run(result.instance);
 
-    let compileEndTime = Date.now();
-    log(
-      "Compiled in " + (compileEndTime - compileStartTime).toString() + " ms"
-    );
+      log(workerId, "Compiled in", Date.now() - compileStartTime, "ms");
 
-    log("Rendering...");
-    let startTime = Date.now();
+      log(workerId, "Initializing context...");
 
-    // Main render call
-    let outputRaw = self.render(e.data.params);
+      let initStartTime = Date.now();
 
-    let endTime = Date.now();
-    log("Rendering complete!");
-    log("Took " + (endTime - startTime).toString() + " ms");
+      // Initialize rendering context
+      self.initialize(e.data.initializeParams);
 
-    postMessage({
-      done: true,
-      output: JSON.parse(outputRaw),
-    });
-  },
-  false
-);
+      log(
+        workerId,
+        "Context initialized in ",
+        Date.now() - initStartTime,
+        "ms"
+      );
+      renderFunc = self.render;
+
+      // Worker manager is allowed to send render messages to this worker
+      postMessage({
+        initDone: true,
+      });
+    } else if (e.data.type === "render") {
+      let renderStartTime = Date.now();
+
+      // Main render call
+      let outputRaw = renderFunc(e.data.renderParams);
+
+      log(workerId, "Rendering complete!");
+      log(workerId, "Took", Date.now() - renderStartTime, "ms");
+
+      postMessage({
+        done: true,
+        workerId: workerId,
+        output: JSON.parse(outputRaw),
+      });
+    }
+  };
+}

@@ -29,7 +29,7 @@ type Camera struct {
 	OrtographicSize float32
 }
 
-func (camera *Camera) SpawnRays(resolutionWidth int, resolutionHeight int) []Ray {
+func (camera *Camera) SpawnRays(xoffset int, yoffset int, resolutionWidth int, resolutionHeight int) []Ray {
 	rayCount := resolutionHeight * resolutionWidth * camera.RaysPerPixel
 	rays := make([]Ray, rayCount)
 
@@ -65,8 +65,8 @@ func (camera *Camera) SpawnRays(resolutionWidth int, resolutionHeight int) []Ray
 	horizontalStep := (projectionPlaneBottomRight.X() - projectionPlaneTopLeft.X()) / float32(resolutionWidth)
 
 	ri := 0
-	for j := 0; j < resolutionHeight; j++ {
-		for i := 0; i < resolutionWidth; i++ {
+	for j := yoffset; j < yoffset+resolutionHeight; j++ {
+		for i := xoffset; i < xoffset+resolutionWidth; i++ {
 			for rpp := 0; rpp < camera.RaysPerPixel; rpp++ {
 
 				var originCameraSpace mgl32.Vec3
@@ -90,8 +90,8 @@ func (camera *Camera) SpawnRays(resolutionWidth int, resolutionHeight int) []Ray
 				}
 
 				ray := Ray{
-					X:         i,
-					Y:         j,
+					X:         i - xoffset,
+					Y:         j - yoffset,
 					Bounce:    0,
 					Origin:    origin,
 					Direction: dir,
