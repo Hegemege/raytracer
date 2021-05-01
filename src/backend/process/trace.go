@@ -136,7 +136,6 @@ func randomInHemisphere(normal mgl32.Vec3) mgl32.Vec3 {
 }
 
 func randomInUnitSphere() mgl32.Vec3 {
-	// rand.Seed(x)
 	for {
 		p := mgl32.Vec3{rand.Float32()*2 - 1, rand.Float32()*2 - 1, rand.Float32()*2 - 1}
 		if p.LenSqr() < 1 {

@@ -23,6 +23,7 @@ export default class RendererStats extends BaseComponent {
     }
     return (
       <div className="render-stats">
+        <Row>Worker ID {this.props.workerId}</Row>
         <Row className="render-stat-header-row">
           <Col md={2}>Progress</Col>
           <Col md={3}>Time</Col>

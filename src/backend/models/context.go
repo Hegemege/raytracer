@@ -25,6 +25,7 @@ type RenderContext struct {
 }
 
 type RenderPass struct {
+	TaskID  int
 	RNGSeed int64
 	XOffset int
 	YOffset int

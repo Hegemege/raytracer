@@ -29,8 +29,8 @@ type Camera struct {
 	OrtographicSize float32
 }
 
-func (camera *Camera) SpawnRays(xoffset int, yoffset int, resolutionWidth int, resolutionHeight int) []Ray {
-	rayCount := resolutionHeight * resolutionWidth * camera.RaysPerPixel
+func (camera *Camera) SpawnRays(xoffset int, yoffset int, taskWidth int, taskHeight int, totalWidth int, totalHeight int) []Ray {
+	rayCount := taskHeight * taskWidth * camera.RaysPerPixel
 	rays := make([]Ray, rayCount)
 
 	var projectionPlaneTopLeft mgl32.Vec3
@@ -38,7 +38,7 @@ func (camera *Camera) SpawnRays(xoffset int, yoffset int, resolutionWidth int, r
 
 	if camera.Projection == Perspective {
 		verticalHalfAngle := math.Pi * (camera.FieldOfView / 2.0) / 180.0
-		horizontalHalfAngle := verticalHalfAngle * (float32(resolutionWidth) / float32(resolutionHeight))
+		horizontalHalfAngle := verticalHalfAngle * (float32(totalWidth) / float32(totalHeight))
 
 		forward := mgl32.Vec3{0, 0, camera.ProjectionPlaneDistance}
 
@@ -56,17 +56,17 @@ func (camera *Camera) SpawnRays(xoffset int, yoffset int, resolutionWidth int, r
 		projectionPlaneTopLeft = mgl32.Vec3{left.X(), top.Y(), camera.ProjectionPlaneDistance}
 		projectionPlaneBottomRight = mgl32.Vec3{right.X(), bottom.Y(), camera.ProjectionPlaneDistance}
 	} else {
-		ortographicHalfWidth := camera.OrtographicSize * (float32(resolutionWidth) / float32(resolutionHeight))
+		ortographicHalfWidth := camera.OrtographicSize * (float32(totalWidth) / float32(totalHeight))
 		projectionPlaneTopLeft = mgl32.Vec3{-ortographicHalfWidth, camera.OrtographicSize, camera.ProjectionPlaneDistance}
 		projectionPlaneBottomRight = mgl32.Vec3{ortographicHalfWidth, -camera.OrtographicSize, camera.ProjectionPlaneDistance}
 	}
 
-	verticalStep := (projectionPlaneTopLeft.Y() - projectionPlaneBottomRight.Y()) / float32(resolutionHeight)
-	horizontalStep := (projectionPlaneBottomRight.X() - projectionPlaneTopLeft.X()) / float32(resolutionWidth)
+	verticalStep := (projectionPlaneTopLeft.Y() - projectionPlaneBottomRight.Y()) / float32(totalHeight)
+	horizontalStep := (projectionPlaneBottomRight.X() - projectionPlaneTopLeft.X()) / float32(totalWidth)
 
 	ri := 0
-	for j := yoffset; j < yoffset+resolutionHeight; j++ {
-		for i := xoffset; i < xoffset+resolutionWidth; i++ {
+	for j := yoffset; j < yoffset+taskHeight; j++ {
+		for i := xoffset; i < xoffset+taskWidth; i++ {
 			for rpp := 0; rpp < camera.RaysPerPixel; rpp++ {
 
 				var originCameraSpace mgl32.Vec3

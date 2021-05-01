@@ -59,7 +59,7 @@ func render(this js.Value, args []js.Value) interface{} {
 	draw.Draw(result.ImageData, result.ImageData.Bounds(), &image.Uniform{color.Black}, image.Point{}, draw.Src)
 
 	// Spawn initial rays
-	rays := context.Camera.SpawnRays(pass.XOffset, pass.YOffset, pass.Width, pass.Height)
+	rays := context.Camera.SpawnRays(pass.XOffset, pass.YOffset, pass.Width, pass.Height, context.Width, context.Height)
 
 	progressUpdate(1.0, "spawnRays")
 

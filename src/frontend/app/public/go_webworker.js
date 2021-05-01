@@ -64,6 +64,7 @@ function progressUpdate(params) {
         initDone: true,
       });
     } else if (e.data.type === "render") {
+      log(workerId, "Rendering task", e.data.taskId);
       let renderStartTime = Date.now();
 
       // Main render call
@@ -76,6 +77,14 @@ function progressUpdate(params) {
         done: true,
         workerId: workerId,
         output: JSON.parse(outputRaw),
+        params: e.data.renderParams, // return original params for parsing the final image
+      });
+    } else if (e.data.type === "askForWork") {
+      // Used for the first task
+      postMessage({
+        done: true,
+        workerId: workerId,
+        output: null,
       });
     }
   };

@@ -5,10 +5,12 @@ export default class RendererFrame extends BaseComponent {
   constructor(props) {
     super(props);
     this.state = {
-      renderedData: "",
+      renderedBlocks: 0,
+      renderKey: null,
     };
     this.canvasRef = React.createRef();
     this.imageData = null;
+    this.offscreenCanvas = null;
   }
 
   componentDidMount = async () => {};
@@ -18,45 +20,88 @@ export default class RendererFrame extends BaseComponent {
       return;
     }
 
-    if (this.props.imageData.Pix == this.state.renderedData) {
+    if (this.props.imageData.length == this.state.renderedBlocks) {
       return;
+    }
+
+    if (
+      this.props.imageDetails &&
+      this.props.renderKey !== this.state.renderKey
+    ) {
+      await this.setStateAsync({
+        ...this.state,
+        renderKey: this.props.renderKey,
+      });
+      this.initializeCanvases();
     }
 
     await this.setStateAsync({
       ...this.state,
-      renderedData: this.props.imageData.Pix,
+      renderedBlocks: this.props.imageData.length,
     });
 
     this.updateCanvas();
   };
 
-  updateCanvas = () => {
+  initializeCanvases = () => {
     // Load the image data and put it into the canvas
-
-    let width = this.props.imageData.Rect.Max.X;
-    let height = this.props.imageData.Rect.Max.Y;
-    let scale = this.props.scale / 100.0;
+    let width = this.props.imageDetails.width;
+    let height = this.props.imageDetails.height;
+    let scale = this.props.imageDetails.scale / 100.0;
 
     let offscreen = new OffscreenCanvas(width, height);
-    let offscreenContext = offscreen.getContext("2d");
-    let context = this.canvasRef.current.getContext("2d");
+    this.offscreenCanvas = offscreen;
 
-    let data = Uint8ClampedArray.from(
-      this.base64ToArrayBuffer(this.props.imageData.Pix)
+    let offscreenContext = this.offscreenCanvas.getContext("2d");
+    offscreenContext.putImageData(
+      new ImageData(
+        new Uint8ClampedArray(4 * width * height).fill(0),
+        width,
+        height
+      ),
+      0,
+      0
     );
-    this.imageData = new ImageData(data, width, height);
 
-    offscreenContext.putImageData(this.imageData, 0, 0);
-
+    let context = this.canvasRef.current.getContext("2d");
     context.canvas.width = width * scale;
     context.canvas.height = height * scale;
+
     context.drawImage(
-      offscreen,
+      this.offscreenCanvas,
       0,
       0,
       context.canvas.width,
       context.canvas.height
     );
+  };
+
+  updateCanvas = () => {
+    for (let result of this.props.imageData) {
+      let width = result.params.Width;
+      let height = result.params.Height;
+      let xoffset = result.params.XOffset;
+      let yoffset = result.params.YOffset;
+
+      let offscreenContext = this.offscreenCanvas.getContext("2d");
+
+      let data = Uint8ClampedArray.from(
+        this.base64ToArrayBuffer(result.imageData.Pix)
+      );
+      this.imageData = new ImageData(data, width, height);
+
+      offscreenContext.putImageData(this.imageData, xoffset, yoffset);
+
+      let context = this.canvasRef.current.getContext("2d");
+
+      context.drawImage(
+        this.offscreenCanvas,
+        0,
+        0,
+        context.canvas.width,
+        context.canvas.height
+      );
+    }
   };
 
   base64ToHex = (str) => {
