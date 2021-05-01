@@ -14,7 +14,7 @@ import BaseComponent from "./components/Common/BaseComponent";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import React from "react";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import Renderer from "./components/Renderer";
+import Renderer from "./components/Renderer/Renderer";
 
 library.add(faImage, faCopy);
 

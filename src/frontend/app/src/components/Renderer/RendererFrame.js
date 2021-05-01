@@ -1,4 +1,4 @@
-import BaseComponent from "./BaseComponent";
+import BaseComponent from "../Common/BaseComponent";
 import React from "react";
 
 export default class RendererFrame extends BaseComponent {

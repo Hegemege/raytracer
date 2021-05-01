@@ -69,7 +69,7 @@ func (camera *Camera) SpawnRays(xoffset int, yoffset int, taskWidth int, taskHei
 
 	ri := 0
 	reportedIndex := 0
-	reportingInterval := int(float32(rayCount) / 100.0)
+	reportingInterval := int(float32(rayCount) / 10.0)
 	for j := yoffset; j < yoffset+taskHeight; j++ {
 		for i := xoffset; i < xoffset+taskWidth; i++ {
 			for rpp := 0; rpp < camera.RaysPerPixel; rpp++ {
