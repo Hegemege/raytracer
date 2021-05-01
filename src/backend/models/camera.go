@@ -3,6 +3,7 @@ package models
 import (
 	"math"
 	"math/rand"
+	"raytracer/utility"
 
 	"github.com/go-gl/mathgl/mgl32"
 )
@@ -29,7 +30,9 @@ type Camera struct {
 	OrtographicSize float32
 }
 
-func (camera *Camera) SpawnRays(xoffset int, yoffset int, taskWidth int, taskHeight int, totalWidth int, totalHeight int) []Ray {
+func (camera *Camera) SpawnRays(xoffset int, yoffset int, taskWidth int, taskHeight int, totalWidth int, totalHeight int, workerID int) []Ray {
+	utility.ProgressUpdate(0.0, "spawnRays", workerID)
+
 	rayCount := taskHeight * taskWidth * camera.RaysPerPixel
 	rays := make([]Ray, rayCount)
 
@@ -65,9 +68,17 @@ func (camera *Camera) SpawnRays(xoffset int, yoffset int, taskWidth int, taskHei
 	horizontalStep := (projectionPlaneBottomRight.X() - projectionPlaneTopLeft.X()) / float32(totalWidth)
 
 	ri := 0
+	reportedIndex := 0
+	reportingInterval := int(float32(rayCount) / 100.0)
 	for j := yoffset; j < yoffset+taskHeight; j++ {
 		for i := xoffset; i < xoffset+taskWidth; i++ {
 			for rpp := 0; rpp < camera.RaysPerPixel; rpp++ {
+
+				if ri > reportedIndex+reportingInterval {
+					reportedIndex = ri
+					progress := float32(reportedIndex) / float32(rayCount)
+					utility.ProgressUpdate(progress, "spawnRays", workerID)
+				}
 
 				var originCameraSpace mgl32.Vec3
 				var dir mgl32.Vec3
@@ -102,6 +113,8 @@ func (camera *Camera) SpawnRays(xoffset int, yoffset int, taskWidth int, taskHei
 			}
 		}
 	}
+
+	utility.ProgressUpdate(1.0, "spawnRays", workerID)
 
 	return rays
 }

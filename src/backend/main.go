@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"raytracer/models"
 	"raytracer/process"
+	"raytracer/utility"
 	"syscall/js"
 )
 
@@ -33,11 +34,11 @@ func initialize(this js.Value, args []js.Value) interface{} {
 	}
 	context = ctx
 
-	progressUpdate(0.0, "RenderContext.Initialize")
+	utility.ProgressUpdate(0.0, "RenderContext.Initialize", context.WorkerID)
 
 	context.Initialize()
 
-	progressUpdate(1.0, "RenderContext.Initialize")
+	utility.ProgressUpdate(1.0, "RenderContext.Initialize", context.WorkerID)
 	return nil
 }
 
@@ -52,18 +53,14 @@ func render(this js.Value, args []js.Value) interface{} {
 		return handleError(err, &result)
 	}
 
-	progressUpdate(0.0, "spawnRays")
-
 	// Fill with black
 	result.ImageData = image.NewRGBA(image.Rect(0, 0, pass.Width, pass.Height))
 	draw.Draw(result.ImageData, result.ImageData.Bounds(), &image.Uniform{color.Black}, image.Point{}, draw.Src)
 
 	// Spawn initial rays
-	rays := context.Camera.SpawnRays(pass.XOffset, pass.YOffset, pass.Width, pass.Height, context.Width, context.Height)
+	rays := context.Camera.SpawnRays(pass.XOffset, pass.YOffset, pass.Width, pass.Height, context.Width, context.Height, context.WorkerID)
 
-	progressUpdate(1.0, "spawnRays")
-
-	progressUpdate(0.0, "trace")
+	utility.ProgressUpdate(0.0, "trace", context.WorkerID)
 	updateInterval := int(float32(len(rays)) / 100.0)
 	updateIndex := 0
 
@@ -73,9 +70,8 @@ func render(this js.Value, args []js.Value) interface{} {
 		if i > updateIndex+updateInterval {
 			updateIndex = i
 			progress := float32(updateIndex) / float32(len(rays))
-			progressUpdate(progress, "trace")
+			utility.ProgressUpdate(progress, "trace", context.WorkerID)
 		}
-
 		rayColor := process.Trace(context, &ray)
 		r, g, b, _ := result.ImageData.At(ray.X, ray.Y).RGBA()
 		r += uint32(float32(rayColor.R) / float32(context.Camera.RaysPerPixel))
@@ -89,32 +85,13 @@ func render(this js.Value, args []js.Value) interface{} {
 			A: 255,
 		})
 	}
-	progressUpdate(1.0, "trace")
+	utility.ProgressUpdate(1.0, "trace", context.WorkerID)
 
-	progressUpdate(0.0, "output")
+	utility.ProgressUpdate(0.0, "output", context.WorkerID)
 	output := result.Output()
-	progressUpdate(1.0, "output")
+	utility.ProgressUpdate(1.0, "output", context.WorkerID)
 
 	return output
-}
-
-func progressUpdate(progress float32, event string) {
-	data := struct {
-		Progress float32 `json:"progress"`
-		Event    string  `json:"event"`
-		WorkerID int     `json:"workerId"`
-	}{
-		progress,
-		event,
-		context.WorkerID,
-	}
-
-	raw, err := json.Marshal(data)
-	if err != nil {
-		panic(err)
-	}
-
-	js.Global().Call("progressUpdate", string(raw))
 }
 
 func handleError(err error, result *models.RenderResult) string {
