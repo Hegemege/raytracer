@@ -30,8 +30,8 @@ type Camera struct {
 	OrtographicSize float32
 }
 
-func (camera *Camera) SpawnRays(xoffset int, yoffset int, taskWidth int, taskHeight int, totalWidth int, totalHeight int, workerID int) []Ray {
-	utility.ProgressUpdate(0.0, "spawnRays", workerID)
+func (camera *Camera) SpawnRays(xoffset int, yoffset int, taskWidth int, taskHeight int, totalWidth int, totalHeight int, taskID int) []Ray {
+	utility.ProgressUpdate(0.0, "spawnRays", taskID)
 
 	rayCount := taskHeight * taskWidth * camera.RaysPerPixel
 	rays := make([]Ray, rayCount)
@@ -77,7 +77,7 @@ func (camera *Camera) SpawnRays(xoffset int, yoffset int, taskWidth int, taskHei
 				if ri > reportedIndex+reportingInterval {
 					reportedIndex = ri
 					progress := float32(reportedIndex) / float32(rayCount)
-					utility.ProgressUpdate(progress, "spawnRays", workerID)
+					utility.ProgressUpdate(progress, "spawnRays", taskID)
 				}
 
 				var originCameraSpace mgl32.Vec3
@@ -114,7 +114,7 @@ func (camera *Camera) SpawnRays(xoffset int, yoffset int, taskWidth int, taskHei
 		}
 	}
 
-	utility.ProgressUpdate(1.0, "spawnRays", workerID)
+	utility.ProgressUpdate(1.0, "spawnRays", taskID)
 
 	return rays
 }

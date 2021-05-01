@@ -5,15 +5,15 @@ import (
 	"syscall/js"
 )
 
-func ProgressUpdate(progress float32, event string, workerId int) {
+func ProgressUpdate(progress float32, event string, taskId int) {
 	data := struct {
 		Progress float32 `json:"progress"`
 		Event    string  `json:"event"`
-		WorkerID int     `json:"workerId"`
+		TaskID   int     `json:"taskId"`
 	}{
 		progress,
 		event,
-		workerId,
+		taskId,
 	}
 
 	raw, err := json.Marshal(data)

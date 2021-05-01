@@ -34,17 +34,19 @@ func initialize(this js.Value, args []js.Value) interface{} {
 	}
 	context = ctx
 
-	utility.ProgressUpdate(0.0, "RenderContext.Initialize", context.WorkerID)
+	utility.ProgressUpdate(0.0, "RenderContext.Initialize", -1)
 
 	context.Initialize()
 
-	utility.ProgressUpdate(1.0, "RenderContext.Initialize", context.WorkerID)
+	utility.ProgressUpdate(1.0, "RenderContext.Initialize", -1)
 	return nil
 }
 
 // Renders a region given by the parameters
 func render(this js.Value, args []js.Value) interface{} {
-	println("Go WebAssembly render call")
+	if context.Settings.Debug {
+		println("Go WebAssembly render call")
+	}
 
 	result := models.RenderResult{}
 
@@ -58,19 +60,18 @@ func render(this js.Value, args []js.Value) interface{} {
 	draw.Draw(result.ImageData, result.ImageData.Bounds(), &image.Uniform{color.Black}, image.Point{}, draw.Src)
 
 	// Spawn initial rays
-	rays := context.Camera.SpawnRays(pass.XOffset, pass.YOffset, pass.Width, pass.Height, context.Width, context.Height, context.WorkerID)
+	rays := context.Camera.SpawnRays(pass.XOffset, pass.YOffset, pass.Width, pass.Height, context.Width, context.Height, pass.TaskID)
 
-	utility.ProgressUpdate(0.0, "trace", context.WorkerID)
-	updateInterval := int(float32(len(rays)) / 100.0)
+	utility.ProgressUpdate(0.0, "trace", pass.TaskID)
+	updateInterval := int(float32(len(rays)) / 10.0)
 	updateIndex := 0
 
-	println("Initial rays", len(rays))
 	// Trace
 	for i, ray := range rays {
 		if i > updateIndex+updateInterval {
 			updateIndex = i
 			progress := float32(updateIndex) / float32(len(rays))
-			utility.ProgressUpdate(progress, "trace", context.WorkerID)
+			utility.ProgressUpdate(progress, "trace", pass.TaskID)
 		}
 		rayColor := process.Trace(context, &ray)
 		r, g, b, _ := result.ImageData.At(ray.X, ray.Y).RGBA()
@@ -85,11 +86,11 @@ func render(this js.Value, args []js.Value) interface{} {
 			A: 255,
 		})
 	}
-	utility.ProgressUpdate(1.0, "trace", context.WorkerID)
+	utility.ProgressUpdate(1.0, "trace", pass.TaskID)
 
-	utility.ProgressUpdate(0.0, "output", context.WorkerID)
+	utility.ProgressUpdate(0.0, "output", pass.TaskID)
 	output := result.Output()
-	utility.ProgressUpdate(1.0, "output", context.WorkerID)
+	utility.ProgressUpdate(1.0, "output", pass.TaskID)
 
 	return output
 }

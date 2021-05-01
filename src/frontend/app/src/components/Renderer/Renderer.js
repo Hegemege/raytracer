@@ -24,6 +24,9 @@ export default class Renderer extends BaseComponent {
     this.workers = {};
     this.state = {
       running: false,
+      completed: false,
+      startTime: null,
+      endTime: null,
       reloadOnRender: true,
       imageData: null,
       imageDetails: null,
@@ -93,6 +96,9 @@ export default class Renderer extends BaseComponent {
     await this.setStateAsync({
       ...this.state,
       running: true,
+      completed: false,
+      startTime: Date.now(),
+      endTime: null,
       imageDetails: {
         width: params.width,
         height: params.height,
@@ -129,6 +135,7 @@ export default class Renderer extends BaseComponent {
       },
       Settings: {
         DrawSurfaceNormal: true,
+        Debug: false,
       },
       BounceLimit: params.bounces,
       BounceRays: params.bounceRays,
@@ -158,9 +165,13 @@ export default class Renderer extends BaseComponent {
     }
 
     // Generate render tasks
+    let tasksPerDimension = params.taskCount;
+    tasksPerDimension = tasksPerDimension ? tasksPerDimension : 1;
+    tasksPerDimension = Math.trunc(Math.sqrt(tasksPerDimension));
+    tasksPerDimension = Math.max(1, tasksPerDimension);
+
     // Generate tasks of roughly equal size. Last row/column can
     // be a few pixels larger to accommodate any resolution
-    let tasksPerDimension = Math.round(Math.sqrt(params.taskCount));
     let taskWidth = Math.floor(params.width / tasksPerDimension);
     let taskHeight = Math.floor(params.height / tasksPerDimension);
     for (let j = 0; j < tasksPerDimension; j++) {
@@ -231,17 +242,22 @@ export default class Renderer extends BaseComponent {
 
           let key = event.data.data.event;
           let progress = event.data.data.progress;
+          let taskId = event.data.data.taskId;
 
           if (!(key in workerEventData)) {
             workerEventData[key] = {};
-            workerEventData[key].startTime = Date.now();
           }
-          workerEventData[key].timer =
-            Date.now() - workerEventData[key].startTime;
-          workerEventData[key].progress = progress;
+          if (!(taskId in workerEventData[key])) {
+            workerEventData[key][taskId] = {};
+            workerEventData[key][taskId].startTime = Date.now();
+          }
+
+          workerEventData[key][taskId].timer =
+            Date.now() - workerEventData[key][taskId].startTime;
+          workerEventData[key][taskId].progress = progress;
 
           let data = { ...this.state.renderEventData };
-          data[workerId] = workerEventData;
+          data[worker.workerId] = workerEventData;
           await this.setStateAsync({
             ...this.state,
             renderEventData: data,
@@ -281,6 +297,8 @@ export default class Renderer extends BaseComponent {
               await this.setStateAsync({
                 ...this.state,
                 running: false,
+                completed: true,
+                endTime: Date.now(),
               });
             }
           }
@@ -341,6 +359,8 @@ export default class Renderer extends BaseComponent {
       renderEventData: {},
       imageData: [],
       running: false,
+      completed: true,
+      endTime: Date.now(),
     });
 
     // Destroy render tasks
@@ -350,6 +370,7 @@ export default class Renderer extends BaseComponent {
   onParamsChanged = async () => {};
 
   render() {
+    let endTime = this.state.completed ? this.state.endTime : Date.now();
     return (
       <Container>
         <Row>
@@ -372,7 +393,11 @@ export default class Renderer extends BaseComponent {
               ></RendererFrame>
             </Row>
             <Row>
-              <Button variant="outline-primary" onClick={this.onCopyClicked}>
+              <Button
+                variant="outline-primary"
+                className="form-margin"
+                onClick={this.onCopyClicked}
+              >
                 <FontAwesomeIcon
                   icon={["fas", "copy"]}
                   style={{ marginRight: "0.5rem" }}
@@ -380,6 +405,11 @@ export default class Renderer extends BaseComponent {
                 Copy
               </Button>
             </Row>
+            {this.state.running || this.state.completed ? (
+              <Row>
+                <p>Render time {endTime - this.state.startTime} ms</p>
+              </Row>
+            ) : null}
           </Col>
           <Col>
             {Object.keys(this.state.renderEventData).map((workerId, i) => (

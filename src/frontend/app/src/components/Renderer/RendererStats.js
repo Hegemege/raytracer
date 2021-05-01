@@ -19,8 +19,16 @@ export default class RendererStats extends BaseComponent {
   render() {
     let total = 0;
     for (let key in this.props.data) {
-      total += this.props.data[key].timer;
+      for (let taskId in this.props.data[key]) {
+        total += this.props.data[key][taskId].timer;
+      }
     }
+
+    let data = this.props.data;
+    if (!data) {
+      return null;
+    }
+
     return (
       <div className="render-stats">
         <Row>Worker ID {this.props.workerId}</Row>
@@ -29,21 +37,26 @@ export default class RendererStats extends BaseComponent {
           <Col md={3}>Time</Col>
           <Col>Event</Col>
         </Row>
-        {Object.keys(this.props.data ? this.props.data : {}).map((key, i) => (
-          <Row key={i} className="render-stat-row">
-            <div
-              style={{
-                position: "absolute",
-                height: "2px",
-                backgroundColor: "lightblue",
-                width: (this.props.data[key].progress * 100).toString() + "%",
-              }}
-            ></div>
-            <Col md={2}>{parseInt(this.props.data[key].progress * 100)}%</Col>
-            <Col md={3}>{this.props.data[key].timer} ms</Col>
-            <Col>{key}</Col>
-          </Row>
-        ))}
+        {Object.keys(data).map((key, i) =>
+          Object.keys(data[key])
+            .sort()
+            .reverse()
+            .map((taskId, j) => (
+              <Row key={`${i}-${j}`} className="render-stat-row">
+                <div
+                  style={{
+                    position: "absolute",
+                    height: "2px",
+                    backgroundColor: "lightblue",
+                    width: (data[key][taskId].progress * 100).toString() + "%",
+                  }}
+                ></div>
+                <Col md={2}>{parseInt(data[key][taskId].progress * 100)}%</Col>
+                <Col md={3}>{data[key][taskId].timer} ms</Col>
+                <Col>{key}</Col>
+              </Row>
+            ))
+        )}
         <Row className="render-stat-total-row">
           <Col md={2}>Total</Col>
           <Col md={3}>{total} ms</Col>

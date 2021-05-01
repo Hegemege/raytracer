@@ -47,7 +47,7 @@ func (context *RenderContext) Initialize() error {
 
 	context.Scene.LinkMaterials()
 	if len(context.ObjBuffer) > 0 && len(context.MtlBuffer) > 0 {
-		options := &gwob.ObjParserOptions{LogStats: true, Logger: func(msg string) { println(msg) }}
+		options := &gwob.ObjParserOptions{LogStats: context.Settings.Debug, Logger: func(msg string) { println(msg) }}
 		obj, err := gwob.NewObjFromBuf("scene", []byte(context.ObjBuffer), options)
 		if err != nil {
 			return err

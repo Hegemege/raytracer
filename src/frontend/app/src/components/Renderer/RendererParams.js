@@ -95,23 +95,6 @@ export default class RendererParams extends BaseComponent {
     await this.onParamsChanged();
   };
 
-  handleTaskCountChanged = async (event) => {
-    let taskCount = parseInt(event.target.value);
-    taskCount = taskCount ? taskCount : 1;
-    taskCount = Math.pow(Math.trunc(Math.sqrt(taskCount)), 2);
-    taskCount = Math.max(1, taskCount);
-
-    await this.setStateAsync({
-      ...this.state,
-      params: {
-        ...this.state.params,
-        taskCount: taskCount,
-      },
-    });
-
-    await this.onParamsChanged();
-  };
-
   onAbortClicked = async (e) => {
     await this.props.onAbort(e);
   };
@@ -333,7 +316,7 @@ export default class RendererParams extends BaseComponent {
                 type="text"
                 label="Tasks"
                 value={this.state.params.taskCount}
-                onChange={this.handleTaskCountChanged}
+                onChange={(e) => this.handleIntParamChanged(e, "taskCount")}
               />
             </Form.Group>
 
