@@ -9,6 +9,10 @@ type Triangle struct {
 	Vertices [3]mgl32.Vec3
 	// TODO: Add vertex normals
 
+	// For Woop intersection
+	LocalM mgl32.Mat3
+	LocalN mgl32.Vec3
+
 	Normal   mgl32.Vec3
 	Material *gwob.Material
 
@@ -18,58 +22,60 @@ type Triangle struct {
 	Edge2 mgl32.Vec3
 }
 
-func (triangle *Triangle) RayIntersect(ray *Ray) float32 {
+func (triangle *Triangle) RayIntersect(ray *Ray) (float32, float32, float32) {
 	// From https://www.scratchapixel.com/lessons/3d-basic-rendering/ray-tracing-rendering-a-triangle/moller-trumbore-ray-triangle-intersection
 	v0v2 := triangle.Edge2.Mul(-1)
 	pvec := ray.Direction.Cross(v0v2)
 	det := triangle.Edge0.Dot(pvec)
 	if det < 0.0001 {
-		return -1
+		return -1, 0, 0
 	}
 
 	invdet := 1.0 / det
 	tvec := ray.Origin.Sub(triangle.Vertices[0])
 	u := tvec.Dot(pvec) * invdet
 	if u < 0 || u > 1 {
-		return -1
+		return -1, 0, 0
 	}
 
 	qvec := tvec.Cross(triangle.Edge0)
 	v := ray.Direction.Dot(qvec) * invdet
 	if v < 0 || u+v > 1 {
-		return -1
+		return -1, 0, 0
 	}
 
 	t := v0v2.Dot(qvec) * invdet
 
-	return t
+	return t, u, v
 }
 
 /*
+func NewTriangle(v0 mgl32.Vec3, v1 mgl32.Vec3, v2 mgl32.Vec3) *Triangle {
+	// Woop04
+	normal := v1.Sub(v0).Cross(v2.Sub(v0)).Normalize()
+	tri := &Triangle{
+		Vertices: [3]mgl32.Vec3{v0, v1, v2},
+		LocalM:   mgl32.Mat3FromCols(v1.Sub(v0), v2.Sub(v0), normal).Inv(),
+		Normal:   normal,
+	}
+
+	tri.LocalN = tri.LocalM.Mul(-1).Mul3x1(v0)
+
+	return tri
+}
+*/
+
+/*
 func (triangle *Triangle) RayIntersect(ray *Ray) float32 {
-	// From https://www.scratchapixel.com/lessons/3d-basic-rendering/ray-tracing-rendering-a-triangle/ray-triangle-intersection-geometric-solution
-	nDotRay := triangle.Normal.Dot(ray.Direction)
-	if math.Abs(float64(nDotRay)) < 0.0001 {
-		return -1 // Parallel
-	}
+	// Woop04
+	transformed_origin := triangle.LocalM.Mul3x1(ray.Origin).Add(triangle.LocalN)
+	transformed_dir := triangle.LocalM.Mul3x1(ray.Direction)
 
-	d := triangle.Normal.Dot(triangle.Vertices[0])
-	t := (triangle.Normal.Dot(ray.Origin) + d) / nDotRay
-	if t < 0 {
-		return -1
-	}
+	t := -transformed_origin.Z() / transformed_dir.Z()
+	u := transformed_origin.X() + transformed_dir.X()*t
+	v := transformed_origin.Y() + transformed_dir.Y()*t
 
-	P := ray.Origin.Add(ray.Direction.Mul(t))
-
-	if triangle.Normal.Dot(triangle.Edge0.Cross(P.Sub(triangle.Vertices[0]))) < 0 {
-		return -1
-	}
-
-	if triangle.Normal.Dot(triangle.Edge1.Cross(P.Sub(triangle.Vertices[1]))) < 0 {
-		return -1
-	}
-
-	if triangle.Normal.Dot(triangle.Edge2.Cross(P.Sub(triangle.Vertices[2]))) < 0 {
+	if u <= 0.0 || v <= 0.0 || u+v >= 1.0 {
 		return -1
 	}
 

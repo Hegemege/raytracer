@@ -1,7 +1,6 @@
 package process
 
 import (
-	"image/color"
 	"math"
 	"math/rand"
 	"raytracer/models"
@@ -9,91 +8,179 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 )
 
-func Trace(context *models.RenderContext, ray *models.Ray) mgl32.Vec3 {
-	// Distance to hit, can be used to create a depth map too
-	var t float32 = math.MaxFloat32
+type RaycastResult struct {
+	Triangle *models.Triangle
+	T        float32
+	U        float32
+	V        float32
+	Point    mgl32.Vec3
+}
 
-	// If no hits, return background color
-	//r := 256 * float32(ray.X) / float32(context.Width)
-	//g := 256 * float32(ray.Y) / float32(context.Height)
-	//b := 128
-	r := float32(255.0)
-	g := float32(255.0)
-	b := float32(255.0)
+// Path traces a given pixel ray
+func Trace(context *models.RenderContext, ray *models.Ray) mgl32.Vec3 {
+	// If out of scene, return background color
+	// "Ambient color"
+	r := float32(0.0)
+	g := float32(0.0)
+	b := float32(0.0)
 	c := mgl32.Vec3{
 		r / 255.0,
 		g / 255.0,
 		b / 255.0,
 	}
 
-	hit := false
-	bounce := false
-	var hitNormal mgl32.Vec3
+	result := rayCast(context, ray)
 
-	for _, sphere := range context.Scene.Spheres {
-		distance := sphere.RayIntersect(ray)
-		if distance > 0 && distance < t {
-			hit = true
-			bounce = true
-			t = distance
-			normal := sphere.NormalAt(ray.Origin.Add(ray.Direction.Mul(distance)))
-			hitNormal = normal
-			c = mgl32.Vec3{
-				(normal.X() + 1) * 0.5,
-				(normal.Y() + 1) * 0.5,
-				(normal.Z() + 1) * 0.5,
-			}
-		}
-	}
+	shadingTerms := make([]mgl32.Vec3, 0)
+	brdfTerms := make([]mgl32.Vec3, 0)
 
-	for _, triangle := range context.Triangles {
-		distance := triangle.RayIntersect(ray)
-		if distance > 0 && distance < t {
-			hit = true
-			bounce = true
-			// Don't bounce from lights
-			if triangle.Material.Name == "Light" {
-				bounce = false
-			}
+	indirectCounter := 0
 
-			hitNormal = triangle.Normal // TODO: Smoothing? Average vertex normals by u,v
+	currentDir := ray.Direction
 
-			t = distance
-			r := triangle.Material.Kd[0]
-			g := triangle.Material.Kd[1]
-			b := triangle.Material.Kd[2]
-			c = mgl32.Vec3{r, g, b}
-		}
-	}
-
-	// Bounces
-	if hit && bounce && ray.Bounce < context.BounceLimit {
-		hitPoint := ray.Origin.Add(ray.Direction.Mul(t))
-		gatheredColor := mgl32.Vec3{0, 0, 0}
-		for i := 0; i < context.BounceRays; i++ {
-			// Sample random in unit sphere and normalize
-			sample := randomInHemisphere(hitNormal).Normalize()
-
-			// Spawn new ray
-			bounceRay := models.Ray{
-				Origin:    hitPoint, //.Add(sample.Mul(0.01)),
-				Bounce:    ray.Bounce + 1,
-				Direction: sample,
-				X:         ray.X,
-				Y:         ray.Y,
-			}
-
-			bounceColor := Trace(context, &bounceRay)
-			gatheredColor = gatheredColor.Add(bounceColor)
+	for {
+		if result == nil {
+			break
 		}
 
-		totalColor := gatheredColor.Mul(1.0 / float32(context.BounceRays))
+		shading := mgl32.Vec3{0, 0, 0}
+		diffuse, normal, _ := getMaterialParameters(context, result)
 
-		c = multiplyColor(c, totalColor)
+		lightSampleN := 25
+		for i := 0; i < lightSampleN; i++ {
+			lightSample, pdf := context.Light.Sample()
+
+			shadowRay := lightSample.Sub(result.Point)
+			shadowRayN := shadowRay.Normalize()
+			lightIncident := shadowRayN.Dot(context.Light.Normal)
+			if lightIncident < 0 {
+				sRay := &models.Ray{
+					Origin:    result.Point,
+					Direction: shadowRayN,
+					X:         ray.X,
+					Y:         ray.Y,
+					Bounce:    ray.Bounce,
+				}
+				shadowResult := rayCast(context, sRay)
+
+				if shadowResult != nil && shadowResult.Triangle.Material.Name == "Light" {
+					theta_l := float32(math.Max(float64(-lightIncident), 0.0))
+					theta := float32(math.Max(float64(shadowRayN.Dot(result.Triangle.Normal)), 0.0))
+					radius2 := shadowRay.LenSqr()
+
+					color := multiplyColor(diffuse, context.Light.Emission).Mul(theta_l * theta / (radius2 * pdf * math.Pi))
+					color = clampColor(color)
+
+					shading = shading.Add(color)
+				}
+			}
+		}
+
+		shading = shading.Mul(1 / float32(lightSampleN))
+
+		shadingTerms = append(shadingTerms, shading)
+
+		if indirectCounter >= int(context.BounceLimit) {
+			brdfTerms = append(brdfTerms, mgl32.Vec3{0, 0, 0})
+			break
+		}
+
+		// Sample from hemisphere
+		sample := randomInHemisphere(result.Triangle.Normal).Normalize()
+
+		bounceRay := models.Ray{
+			Origin:    result.Point, //.Add(sample.Mul(0.01)),
+			Bounce:    ray.Bounce + 1,
+			Direction: sample,
+			X:         ray.X,
+			Y:         ray.Y,
+		}
+
+		// New bounce
+		result = rayCast(context, &bounceRay)
+		indirectCounter++
+
+		brdfTheta := currentDir.Dot(sample) * -1
+		theta := sample.Dot(normal)
+
+		pdf := math.Cos(float64(brdfTheta)) / math.Pi
+		brdfTerm := diffuse.Mul(float32(math.Cos(float64(theta)) / (math.Pi * pdf)))
+
+		brdfTerms = append(brdfTerms, brdfTerm)
+
+		currentDir = sample
 	}
 
+	// calculate E_i from back of the values to front
+	// e.g. shading_1 + BRDF_1*(shading_2 + BRDF_2*(shading_3 + BRDF_3)))
+
+	for i := len(shadingTerms) - 2; i >= 0; i-- {
+		brdfTerms[i] = multiplyColor(brdfTerms[i], shadingTerms[i+1].Add(brdfTerms[i+1]))
+	}
+
+	if len(shadingTerms) > 0 {
+		return shadingTerms[0].Add(brdfTerms[0])
+	}
+
+	// Did not hit anything
 	return c
+}
 
+func rayCast(context *models.RenderContext, ray *models.Ray) *RaycastResult {
+	// Distance to hit, can be used to create a depth map too
+	var tmin float32 = math.MaxFloat32
+	var umin float32 = 0.0
+	var vmin float32 = 0.0
+	var imin int // Triangle index
+
+	/*
+		for _, sphere := range context.Scene.Spheres {
+			t := sphere.RayIntersect(ray)
+			if t > 0 && t < tmin {
+				tmin = t
+			}
+		}
+	*/
+
+	for i, triangle := range context.Triangles {
+		t, u, v := triangle.RayIntersect(ray)
+		if t > 0 && t < tmin {
+			/*
+				if triangle.Material.Name == "Light" {
+					bounce = false
+				}*/
+
+			tmin = t
+			umin = u
+			vmin = v
+			imin = i
+		}
+	}
+
+	if tmin < math.MaxFloat32 {
+		return &RaycastResult{
+			Triangle: &context.Triangles[imin],
+			T:        tmin,
+			U:        umin,
+			V:        vmin,
+			Point:    ray.Origin.Add(ray.Direction.Mul(tmin)),
+		}
+	}
+
+	return nil
+}
+
+func getMaterialParameters(context *models.RenderContext, result *RaycastResult) (diffuse mgl32.Vec3, normal mgl32.Vec3, specular mgl32.Vec3) {
+	r := result.Triangle.Material.Kd[0]
+	g := result.Triangle.Material.Kd[1]
+	b := result.Triangle.Material.Kd[2]
+	diffuse = mgl32.Vec3{r, g, b}
+	normal = result.Triangle.Normal
+
+	// TODO: Normal map, specular map sampling
+	// TODO: Texture sampling
+
+	return diffuse, normal, specular
 }
 
 func randomInHemisphere(normal mgl32.Vec3) mgl32.Vec3 {
@@ -122,11 +209,10 @@ func multiplyColor(c1 mgl32.Vec3, c2 mgl32.Vec3) mgl32.Vec3 {
 	}
 }
 
-func addColor(c1 color.RGBA, c2 color.RGBA) color.RGBA {
-	return color.RGBA{
-		R: uint8(math.Min(math.Max((float64(c1.R)/255.0)+(float64(c2.R)/255.0), 0.0), 1.0) * 255),
-		G: uint8(math.Min(math.Max((float64(c1.G)/255.0)+(float64(c2.G)/255.0), 0.0), 1.0) * 255),
-		B: uint8(math.Min(math.Max((float64(c1.B)/255.0)+(float64(c2.B)/255.0), 0.0), 1.0) * 255),
-		A: 255,
+func clampColor(c mgl32.Vec3) mgl32.Vec3 {
+	return mgl32.Vec3{
+		float32(math.Min(math.Max(float64(c.X()), 0), 1.0)),
+		float32(math.Min(math.Max(float64(c.Y()), 0), 1.0)),
+		float32(math.Min(math.Max(float64(c.Z()), 0), 1.0)),
 	}
 }

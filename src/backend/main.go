@@ -84,6 +84,7 @@ func render(this js.Value, args []js.Value) interface{} {
 			utility.ProgressUpdate(progress, "trace", pass.TaskID)
 		}
 		rayColor := process.Trace(context, &ray)
+
 		colors[ray.X+ray.Y*pass.Width] = colors[ray.X+ray.Y*pass.Width].Add(rayColor)
 	}
 

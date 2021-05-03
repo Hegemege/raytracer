@@ -19,6 +19,7 @@ type RenderContext struct {
 	MaterialLib   *gwob.MaterialLib
 	DebugMaterial *gwob.Material
 	Triangles     []Triangle
+	Light         *AreaLight
 	BounceLimit   uint8
 	BounceRays    int
 	WorkerID      int
@@ -101,9 +102,63 @@ func (context *RenderContext) Initialize() error {
 					Edge1:    v2.Sub(v1),
 					Edge2:    v0.Sub(v2),
 				}
+
+				//tri := NewTriangle(v0, v1, v2)
+				//tri.Material = material
+
 				context.Triangles = append(context.Triangles, tri)
 			}
 		}
+
+		// Parse the area light
+		var minx, miny, minz float32 = math.MaxFloat32, math.MaxFloat32, math.MaxFloat32
+		var maxx, maxy, maxz float32 = -math.MaxFloat32, -math.MaxFloat32, -math.MaxFloat32
+		var normal mgl32.Vec3
+		var up mgl32.Vec3
+		var sidev0v1 mgl32.Vec3
+		var sidev1v2 mgl32.Vec3
+		for _, triangle := range context.Triangles {
+			if triangle.Material.Name == "Light" {
+				normal = triangle.Normal
+				up = triangle.Edge0.Cross(triangle.Normal).Normalize()
+				sidev0v1 = triangle.Vertices[0].Add(triangle.Vertices[1]).Mul(0.5)
+				sidev1v2 = triangle.Vertices[1].Add(triangle.Vertices[2]).Mul(0.5)
+				for _, vertex := range triangle.Vertices {
+					if vertex.X() < minx {
+						minx = vertex.X()
+					}
+					if vertex.Y() < miny {
+						miny = vertex.Y()
+					}
+					if vertex.Z() < minz {
+						minz = vertex.Z()
+					}
+					if vertex.X() > maxx {
+						maxx = vertex.X()
+					}
+					if vertex.Y() > maxy {
+						maxy = vertex.Y()
+					}
+					if vertex.Z() > maxz {
+						maxz = vertex.Z()
+					}
+				}
+			}
+		}
+
+		center := mgl32.Vec3{(minx + maxx) / 2.0, (miny + maxy) / 2.0, (minz + maxz) / 2.0}
+
+		//transform := mgl32.LookAtV(normal, center, up).Inv()
+		transform := mgl32.Translate3D(center.X(), center.Y(), center.Z())
+		transform = transform.Mul4(mgl32.Mat3FromCols(normal.Cross(up), up, normal).Mat4())
+
+		size := mgl32.Vec2{sidev0v1.Sub(center).Len(), sidev1v2.Sub(center).Len()}
+		emission := mgl32.Vec3{100, 100, 100}
+
+		light := NewAreaLight(transform, size, emission, normal)
+
+		context.Light = light
 	}
+
 	return nil
 }
