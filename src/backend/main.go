@@ -5,11 +5,14 @@ import (
 	"image"
 	"image/color"
 	"image/draw"
+	"math"
 	"math/rand"
 	"raytracer/models"
 	"raytracer/process"
 	"raytracer/utility"
 	"syscall/js"
+
+	"github.com/go-gl/mathgl/mgl32"
 )
 
 // Globals kept by the same WebWorker for multiple calls
@@ -66,6 +69,13 @@ func render(this js.Value, args []js.Value) interface{} {
 	updateInterval := int(float32(len(rays)) / 10.0)
 	updateIndex := 0
 
+	colors := make([]mgl32.Vec3, pass.Width*pass.Height)
+	for j := 0; j < pass.Height; j++ {
+		for i := 0; i < pass.Width; i++ {
+			colors[i+j*pass.Width] = mgl32.Vec3{0, 0, 0}
+		}
+	}
+
 	// Trace
 	for i, ray := range rays {
 		if i > updateIndex+updateInterval {
@@ -74,21 +84,31 @@ func render(this js.Value, args []js.Value) interface{} {
 			utility.ProgressUpdate(progress, "trace", pass.TaskID)
 		}
 		rayColor := process.Trace(context, &ray)
-		r, g, b, _ := result.ImageData.At(ray.X, ray.Y).RGBA()
-		r += uint32(float32(rayColor.R) / float32(context.Camera.RaysPerPixel))
-		g += uint32(float32(rayColor.G) / float32(context.Camera.RaysPerPixel))
-		b += uint32(float32(rayColor.B) / float32(context.Camera.RaysPerPixel))
-
-		result.ImageData.Set(ray.X, ray.Y, color.RGBA{
-			R: uint8(r),
-			G: uint8(g),
-			B: uint8(b),
-			A: 255,
-		})
+		colors[ray.X+ray.Y*pass.Width] = colors[ray.X+ray.Y*pass.Width].Add(rayColor)
 	}
+
 	utility.ProgressUpdate(1.0, "trace", pass.TaskID)
 
 	utility.ProgressUpdate(0.0, "output", pass.TaskID)
+
+	// Gamma correction
+
+	for j := 0; j < pass.Height; j++ {
+		for i := 0; i < pass.Width; i++ {
+
+			c := colors[i+j*pass.Width]
+			c = c.Mul(1.0 / float32(context.Camera.RaysPerPixel))
+
+			gamma := 1.0 / 2.2
+			result.ImageData.SetRGBA(i, j, color.RGBA{
+				R: uint8(255 * math.Pow(float64(c.X()), gamma)),
+				G: uint8(255 * math.Pow(float64(c.Y()), gamma)),
+				B: uint8(255 * math.Pow(float64(c.Z()), gamma)),
+				A: 255,
+			})
+		}
+	}
+
 	output := result.Output()
 	utility.ProgressUpdate(1.0, "output", pass.TaskID)
 
