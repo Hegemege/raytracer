@@ -111,12 +111,12 @@ export default class Renderer extends BaseComponent {
       await this.reloadWebAssembly();
     }
 
-    let x = params.x;
-    let y = params.y;
-    let z = params.z;
-    let rx = (params.rx * Math.PI) / 180.0;
-    let ry = (params.ry * Math.PI) / 180.0;
-    let rz = (params.rz * Math.PI) / 180.0;
+    let x = parseFloat(params.x);
+    let y = parseFloat(params.y);
+    let z = parseFloat(params.z);
+    let rx = (parseFloat(params.rx) * Math.PI) / 180.0;
+    let ry = (parseFloat(params.ry) * Math.PI) / 180.0;
+    let rz = (parseFloat(params.rz) * Math.PI) / 180.0;
     let cameraTransform = translate(x, y, z);
     cameraTransform = multiplyMatrices(cameraTransform, rotateAroundXAxis(rx));
     cameraTransform = multiplyMatrices(cameraTransform, rotateAroundYAxis(ry));
@@ -136,6 +136,8 @@ export default class Renderer extends BaseComponent {
       Settings: {
         DrawSurfaceNormal: true,
         Debug: false,
+        GammaCorrection: params.gammaCorrection,
+        Gamma: parseFloat(params.gamma),
       },
       BounceLimit: params.bounces,
       BounceRays: params.bounceRays,

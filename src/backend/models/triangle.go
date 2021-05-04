@@ -49,6 +49,41 @@ func (triangle *Triangle) RayIntersect(ray *Ray) (float32, float32, float32) {
 	return t, u, v
 }
 
+func (triangle *Triangle) GetShortestEdge() mgl32.Vec3 {
+	if triangle.Edge0.Len() < triangle.Edge1.Len() {
+		if triangle.Edge0.Len() < triangle.Edge2.Len() {
+			return triangle.Edge0
+		}
+		return triangle.Edge2
+	}
+
+	if triangle.Edge1.Len() < triangle.Edge2.Len() {
+		return triangle.Edge1
+	}
+
+	return triangle.Edge2
+}
+
+func (triangle *Triangle) GetMiddleEdge() mgl32.Vec3 {
+	if triangle.Edge0.Len() < triangle.Edge1.Len() {
+		if triangle.Edge1.Len() < triangle.Edge2.Len() {
+			return triangle.Edge1
+		}
+		if triangle.Edge0.Len() < triangle.Edge2.Len() {
+			return triangle.Edge2
+		}
+		return triangle.Edge0
+	}
+
+	if triangle.Edge2.Len() < triangle.Edge1.Len() {
+		return triangle.Edge1
+	}
+	if triangle.Edge0.Len() < triangle.Edge2.Len() {
+		return triangle.Edge0
+	}
+	return triangle.Edge2
+}
+
 /*
 func NewTriangle(v0 mgl32.Vec3, v1 mgl32.Vec3, v2 mgl32.Vec3) *Triangle {
 	// Woop04

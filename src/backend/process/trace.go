@@ -2,8 +2,8 @@ package process
 
 import (
 	"math"
-	"math/rand"
 	"raytracer/models"
+	"raytracer/utility"
 
 	"github.com/go-gl/mathgl/mgl32"
 )
@@ -68,8 +68,8 @@ func Trace(context *models.RenderContext, ray *models.Ray) mgl32.Vec3 {
 					theta := float32(math.Max(float64(shadowRayN.Dot(result.Triangle.Normal)), 0.0))
 					radius2 := shadowRay.LenSqr()
 
-					color := multiplyColor(diffuse, context.Light.Emission).Mul(theta_l * theta / (radius2 * pdf * math.Pi))
-					color = clampColor(color)
+					color := utility.MultiplyColor(diffuse, context.Light.Emission).Mul(theta_l * theta / (radius2 * pdf * math.Pi))
+					color = utility.ClampColor(color)
 
 					shading = shading.Add(color)
 				}
@@ -86,7 +86,7 @@ func Trace(context *models.RenderContext, ray *models.Ray) mgl32.Vec3 {
 		}
 
 		// Sample from hemisphere
-		sample := randomInHemisphere(result.Triangle.Normal).Normalize()
+		sample := utility.RandomInHemisphere(result.Triangle.Normal).Normalize()
 
 		bounceRay := models.Ray{
 			Origin:    result.Point, //.Add(sample.Mul(0.01)),
@@ -115,7 +115,7 @@ func Trace(context *models.RenderContext, ray *models.Ray) mgl32.Vec3 {
 	// e.g. shading_1 + BRDF_1*(shading_2 + BRDF_2*(shading_3 + BRDF_3)))
 
 	for i := len(shadingTerms) - 2; i >= 0; i-- {
-		brdfTerms[i] = multiplyColor(brdfTerms[i], shadingTerms[i+1].Add(brdfTerms[i+1]))
+		brdfTerms[i] = utility.MultiplyColor(brdfTerms[i], shadingTerms[i+1].Add(brdfTerms[i+1]))
 	}
 
 	if len(shadingTerms) > 0 {
@@ -181,38 +181,4 @@ func getMaterialParameters(context *models.RenderContext, result *RaycastResult)
 	// TODO: Texture sampling
 
 	return diffuse, normal, specular
-}
-
-func randomInHemisphere(normal mgl32.Vec3) mgl32.Vec3 {
-	inUnitSphere := randomInUnitSphere()
-	if inUnitSphere.Dot(normal) > 0.0 {
-		return inUnitSphere
-	}
-
-	return inUnitSphere.Mul(-1)
-}
-
-func randomInUnitSphere() mgl32.Vec3 {
-	for {
-		p := mgl32.Vec3{rand.Float32()*2 - 1, rand.Float32()*2 - 1, rand.Float32()*2 - 1}
-		if p.LenSqr() < 1 {
-			return p
-		}
-	}
-}
-
-func multiplyColor(c1 mgl32.Vec3, c2 mgl32.Vec3) mgl32.Vec3 {
-	return mgl32.Vec3{
-		c1[0] * c2[0],
-		c1[1] * c2[1],
-		c1[2] * c2[2],
-	}
-}
-
-func clampColor(c mgl32.Vec3) mgl32.Vec3 {
-	return mgl32.Vec3{
-		float32(math.Min(math.Max(float64(c.X()), 0), 1.0)),
-		float32(math.Min(math.Max(float64(c.Y()), 0), 1.0)),
-		float32(math.Min(math.Max(float64(c.Z()), 0), 1.0)),
-	}
 }

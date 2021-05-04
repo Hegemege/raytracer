@@ -30,6 +30,8 @@ export default class RendererParams extends BaseComponent {
         workerCount: 16,
         taskCount: 16,
         rngSeed: this.getNewSeed(),
+        gammaCorrection: true,
+        gamma: "2.2",
       },
     };
   }
@@ -42,13 +44,15 @@ export default class RendererParams extends BaseComponent {
     await this.props.onChanged({ ...this.state.params });
   };
 
-  handleReloadOnRenderChanged = async (event) => {
+  handleBoolParamChanged = async (event, field) => {
+    let value = event.target.checked;
+    let params = {
+      ...this.state.params,
+    };
+    params[field] = value;
     await this.setStateAsync({
       ...this.state,
-      paraps: {
-        ...this.state.params,
-        reloadOnRender: event.target.checked,
-      },
+      params: params,
     });
 
     await this.onParamsChanged();
@@ -69,11 +73,15 @@ export default class RendererParams extends BaseComponent {
   };
 
   handleFloatParamChanged = async (event, param) => {
-    let value = parseFloat(event.target.value);
+    const floatRegExp = new RegExp("^[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)$");
+    if (event.target.value !== "" && !floatRegExp.test(event.target.value)) {
+      return;
+    }
+
     let params = {
       ...this.state.params,
     };
-    params[param] = value ? value : 0;
+    params[param] = event.target.value;
     await this.setStateAsync({
       ...this.state,
       params: params,
@@ -118,7 +126,9 @@ export default class RendererParams extends BaseComponent {
                 type="checkbox"
                 label="Reload WebAssembly on render"
                 checked={this.state.params.reloadOnRender}
-                onChange={this.handleReloadOnRenderChanged}
+                onChange={(e) =>
+                  this.handleBoolParamChanged(e, "reloadOnRender")
+                }
               />
             </Form.Group>
           </Row>
@@ -240,7 +250,7 @@ export default class RendererParams extends BaseComponent {
                 htmlSize="6"
                 type="text"
                 label="Scale"
-                value={parseFloat(this.state.params.x)}
+                value={this.state.params.x}
                 onChange={(e) => this.handleFloatParamChanged(e, "x")}
               />
             </Form.Group>
@@ -250,7 +260,7 @@ export default class RendererParams extends BaseComponent {
                 htmlSize="6"
                 type="text"
                 label="Scale"
-                value={parseFloat(this.state.params.y)}
+                value={this.state.params.y}
                 onChange={(e) => this.handleFloatParamChanged(e, "y")}
               />
             </Form.Group>
@@ -260,7 +270,7 @@ export default class RendererParams extends BaseComponent {
                 htmlSize="6"
                 type="text"
                 label="Scale"
-                value={parseFloat(this.state.params.z)}
+                value={this.state.params.z}
                 onChange={(e) => this.handleFloatParamChanged(e, "z")}
               />
             </Form.Group>
@@ -271,7 +281,7 @@ export default class RendererParams extends BaseComponent {
                 htmlSize="6"
                 type="text"
                 label="Scale"
-                value={parseFloat(this.state.params.rx)}
+                value={this.state.params.rx}
                 onChange={(e) => this.handleFloatParamChanged(e, "rx")}
               />
             </Form.Group>
@@ -281,7 +291,7 @@ export default class RendererParams extends BaseComponent {
                 htmlSize="6"
                 type="text"
                 label="Scale"
-                value={parseFloat(this.state.params.ry)}
+                value={this.state.params.ry}
                 onChange={(e) => this.handleFloatParamChanged(e, "ry")}
               />
             </Form.Group>
@@ -291,7 +301,7 @@ export default class RendererParams extends BaseComponent {
                 htmlSize="6"
                 type="text"
                 label="Scale"
-                value={parseFloat(this.state.params.rz)}
+                value={this.state.params.rz}
                 onChange={(e) => this.handleFloatParamChanged(e, "rz")}
               />
             </Form.Group>
@@ -328,6 +338,31 @@ export default class RendererParams extends BaseComponent {
                 label="Tasks"
                 value={this.state.params.rngSeed}
                 onChange={(e) => this.handleIntParamChanged(e, "rngSeed")}
+              />
+            </Form.Group>
+
+            <Form.Group
+              controlId="formCheckboxGammaCorrection"
+              className="form-margin"
+            >
+              <Form.Check
+                type="checkbox"
+                label="Gamma correction"
+                checked={this.state.params.gammaCorrection}
+                onChange={(e) =>
+                  this.handleBoolParamChanged(e, "gammaCorrection")
+                }
+              />
+            </Form.Group>
+
+            <Form.Group controlId="formGamma" className="form-margin">
+              <Form.Label>Gamma</Form.Label>
+              <Form.Control
+                htmlSize="6"
+                type="text"
+                label="Gamma"
+                value={this.state.params.gamma}
+                onChange={(e) => this.handleFloatParamChanged(e, "gamma")}
               />
             </Form.Group>
           </Row>

@@ -115,14 +115,18 @@ func (context *RenderContext) Initialize() error {
 		var maxx, maxy, maxz float32 = -math.MaxFloat32, -math.MaxFloat32, -math.MaxFloat32
 		var normal mgl32.Vec3
 		var up mgl32.Vec3
-		var sidev0v1 mgl32.Vec3
-		var sidev1v2 mgl32.Vec3
+		var shortestSide mgl32.Vec3
+		var middleSide mgl32.Vec3
 		for _, triangle := range context.Triangles {
 			if triangle.Material.Name == "Light" {
 				normal = triangle.Normal
-				up = triangle.Edge0.Cross(triangle.Normal).Normalize()
-				sidev0v1 = triangle.Vertices[0].Add(triangle.Vertices[1]).Mul(0.5)
-				sidev1v2 = triangle.Vertices[1].Add(triangle.Vertices[2]).Mul(0.5)
+				// Choose the edge to cross normal with to find up
+				// as the edge that is shortest. Up will then
+				// point from the middle of the arealight towards
+				// the long axis
+				shortestSide = triangle.GetShortestEdge()
+				middleSide = triangle.GetMiddleEdge()
+				up = shortestSide.Cross(triangle.Normal).Normalize()
 				for _, vertex := range triangle.Vertices {
 					if vertex.X() < minx {
 						minx = vertex.X()
@@ -152,7 +156,7 @@ func (context *RenderContext) Initialize() error {
 		transform := mgl32.Translate3D(center.X(), center.Y(), center.Z())
 		transform = transform.Mul4(mgl32.Mat3FromCols(normal.Cross(up), up, normal).Mat4())
 
-		size := mgl32.Vec2{sidev0v1.Sub(center).Len(), sidev1v2.Sub(center).Len()}
+		size := mgl32.Vec2{shortestSide.Len() / 2.0, middleSide.Len() / 2.0}
 		emission := mgl32.Vec3{100, 100, 100}
 
 		light := NewAreaLight(transform, size, emission, normal)

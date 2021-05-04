@@ -49,7 +49,7 @@ func (light *AreaLight) Sample() (mgl32.Vec3, float32) {
 
 	light.index = (light.index + 1) % light.maxSamples
 
-	worldSample := mgl32.TransformCoordinate(sample, light.Transform).Add(light.Transform.Col(3).Vec3())
+	worldSample := mgl32.TransformCoordinate(sample, light.Transform)
 	pdf := 1.0 / (4.0 * light.Size.X() * light.Size.Y())
 
 	return worldSample, pdf

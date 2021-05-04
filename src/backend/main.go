@@ -100,11 +100,21 @@ func render(this js.Value, args []js.Value) interface{} {
 			c := colors[i+j*pass.Width]
 			c = c.Mul(1.0 / float32(context.Camera.RaysPerPixel))
 
-			gamma := 1.0 / 2.2
+			if context.Settings.GammaCorrection {
+				gamma := float64(1.0 / context.Settings.Gamma)
+				c = mgl32.Vec3{
+					float32(math.Pow(float64(c.X()), gamma)),
+					float32(math.Pow(float64(c.Y()), gamma)),
+					float32(math.Pow(float64(c.Z()), gamma)),
+				}
+			}
+
+			c = utility.ClampColor(c)
+
 			result.ImageData.SetRGBA(i, j, color.RGBA{
-				R: uint8(255 * math.Pow(float64(c.X()), gamma)),
-				G: uint8(255 * math.Pow(float64(c.Y()), gamma)),
-				B: uint8(255 * math.Pow(float64(c.Z()), gamma)),
+				R: uint8(255 * c.X()),
+				G: uint8(255 * c.Y()),
+				B: uint8(255 * c.Z()),
 				A: 255,
 			})
 		}
