@@ -9,15 +9,17 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 )
 
-func ProgressUpdate(progress float32, event string, taskId int) {
+func ProgressUpdate(progress float32, event string, taskId int, rays uint64) {
 	data := struct {
 		Progress float32 `json:"progress"`
 		Event    string  `json:"event"`
 		TaskID   int     `json:"taskId"`
+		Rays     uint64  `json:"rays"`
 	}{
 		progress,
 		event,
 		taskId,
+		rays,
 	}
 
 	raw, err := json.Marshal(data)

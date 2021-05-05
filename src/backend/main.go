@@ -37,11 +37,11 @@ func initialize(this js.Value, args []js.Value) interface{} {
 	}
 	context = ctx
 
-	utility.ProgressUpdate(0.0, "RenderContext.Initialize", -1)
+	utility.ProgressUpdate(0.0, "RenderContext.Initialize", -1, 0)
 
 	context.Initialize()
 
-	utility.ProgressUpdate(1.0, "RenderContext.Initialize", -1)
+	utility.ProgressUpdate(1.0, "RenderContext.Initialize", -1, 0)
 	return nil
 }
 
@@ -65,7 +65,7 @@ func render(this js.Value, args []js.Value) interface{} {
 	// Spawn initial rays
 	rays := context.Camera.SpawnRays(pass.XOffset, pass.YOffset, pass.Width, pass.Height, context.Width, context.Height, pass.TaskID)
 
-	utility.ProgressUpdate(0.0, "trace", pass.TaskID)
+	utility.ProgressUpdate(0.0, "trace", pass.TaskID, context.Rays)
 	updateInterval := int(float32(len(rays)) / 10.0)
 	updateIndex := 0
 
@@ -81,16 +81,16 @@ func render(this js.Value, args []js.Value) interface{} {
 		if i > updateIndex+updateInterval {
 			updateIndex = i
 			progress := float32(updateIndex) / float32(len(rays))
-			utility.ProgressUpdate(progress, "trace", pass.TaskID)
+			utility.ProgressUpdate(progress, "trace", pass.TaskID, context.Rays)
 		}
 		rayColor := process.Trace(context, &ray)
 
 		colors[ray.X+ray.Y*pass.Width] = colors[ray.X+ray.Y*pass.Width].Add(rayColor)
 	}
 
-	utility.ProgressUpdate(1.0, "trace", pass.TaskID)
+	utility.ProgressUpdate(1.0, "trace", pass.TaskID, context.Rays)
 
-	utility.ProgressUpdate(0.0, "output", pass.TaskID)
+	utility.ProgressUpdate(0.0, "output", pass.TaskID, context.Rays)
 
 	// Gamma correction
 
@@ -121,7 +121,7 @@ func render(this js.Value, args []js.Value) interface{} {
 	}
 
 	output := result.Output()
-	utility.ProgressUpdate(1.0, "output", pass.TaskID)
+	utility.ProgressUpdate(1.0, "output", pass.TaskID, context.Rays)
 
 	return output
 }

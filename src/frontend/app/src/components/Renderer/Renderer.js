@@ -245,6 +245,7 @@ export default class Renderer extends BaseComponent {
           let key = event.data.data.event;
           let progress = event.data.data.progress;
           let taskId = event.data.data.taskId;
+          let rays = event.data.data.rays;
 
           if (!(key in workerEventData)) {
             workerEventData[key] = {};
@@ -257,6 +258,8 @@ export default class Renderer extends BaseComponent {
           workerEventData[key][taskId].timer =
             Date.now() - workerEventData[key][taskId].startTime;
           workerEventData[key][taskId].progress = progress;
+
+          workerEventData.rays = rays;
 
           let data = { ...this.state.renderEventData };
           data[worker.workerId] = workerEventData;
@@ -373,6 +376,18 @@ export default class Renderer extends BaseComponent {
 
   render() {
     let endTime = this.state.completed ? this.state.endTime : Date.now();
+
+    let totalRays = 0;
+    let raysPerSecond = 0;
+    if (this.state.running || this.state.completed) {
+      for (let key in this.state.renderEventData) {
+        totalRays += this.state.renderEventData[key].rays;
+      }
+
+      let totalSeconds = (endTime - this.state.startTime) / 1000.0;
+      raysPerSecond = totalRays / totalSeconds;
+    }
+
     return (
       <Container>
         <Row>
@@ -408,9 +423,11 @@ export default class Renderer extends BaseComponent {
               </Button>
             </Row>
             {this.state.running || this.state.completed ? (
-              <Row>
-                <p>Render time {endTime - this.state.startTime} ms</p>
-              </Row>
+              <div>
+                <div>Render time {endTime - this.state.startTime} ms</div>
+                <div>Total rays {(totalRays / 1000000).toFixed(2)}M</div>
+                <div>MRays/s {(raysPerSecond / 1000000).toFixed(2)}</div>
+              </div>
             ) : null}
           </Col>
           <Col>

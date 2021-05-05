@@ -23,6 +23,9 @@ type RenderContext struct {
 	BounceLimit   uint8
 	BounceRays    int
 	WorkerID      int
+
+	// Statistics
+	Rays uint64
 }
 
 type RenderPass struct {
@@ -38,6 +41,9 @@ func (context *RenderContext) Initialize() error {
 	if math.Abs(float64(context.Camera.Transform.Trace())) < 0.001 {
 		context.Camera.Transform = mgl32.Ident4()
 	}
+
+	// Reset stats (if somehow set by client)
+	context.Rays = 0
 
 	if context.Width < 0 {
 		context.Width = 0

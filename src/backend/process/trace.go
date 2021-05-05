@@ -127,6 +127,8 @@ func Trace(context *models.RenderContext, ray *models.Ray) mgl32.Vec3 {
 }
 
 func rayCast(context *models.RenderContext, ray *models.Ray) *RaycastResult {
+	context.Rays += 1
+
 	// Distance to hit, can be used to create a depth map too
 	var tmin float32 = math.MaxFloat32
 	var umin float32 = 0.0
@@ -145,11 +147,6 @@ func rayCast(context *models.RenderContext, ray *models.Ray) *RaycastResult {
 	for i, triangle := range context.Triangles {
 		t, u, v := triangle.RayIntersect(ray)
 		if t > 0 && t < tmin {
-			/*
-				if triangle.Material.Name == "Light" {
-					bounce = false
-				}*/
-
 			tmin = t
 			umin = u
 			vmin = v
