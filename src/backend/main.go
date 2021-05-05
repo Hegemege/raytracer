@@ -37,9 +37,18 @@ func initialize(this js.Value, args []js.Value) interface{} {
 	}
 	context = ctx
 
+	rawTextureData := make([]*[]uint8, 0)
+	// Read texture data from the rest of the inputs
+	for i := 1; i < len(args); i++ {
+		imageArr := args[i]
+		inBuf := make([]uint8, imageArr.Get("byteLength").Int())
+		js.CopyBytesToGo(inBuf, imageArr)
+		rawTextureData = append(rawTextureData, &inBuf)
+	}
+
 	utility.ProgressUpdate(0.0, "RenderContext.Initialize", -1, 0)
 
-	context.Initialize()
+	context.Initialize(rawTextureData)
 
 	utility.ProgressUpdate(1.0, "RenderContext.Initialize", -1, 0)
 	return nil

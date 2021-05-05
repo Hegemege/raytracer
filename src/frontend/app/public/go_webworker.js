@@ -48,8 +48,12 @@ function progressUpdate(params) {
 
       let initStartTime = Date.now();
 
+      let textureData = e.data.textureData.map(
+        (buffer) => new Uint8Array(buffer)
+      );
+
       // Initialize rendering context
-      self.initialize(e.data.initializeParams);
+      self.initialize(e.data.initializeParams, ...textureData);
 
       log(
         workerId,

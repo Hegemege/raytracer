@@ -37,14 +37,16 @@ export default class Renderer extends BaseComponent {
       renderEventData: {},
       renderTasks: [],
     };
+    this.textureData = [];
   }
 
   componentDidMount = async () => {
     await this.reloadWebAssembly();
-    await this.loadScene("scenes/simple-spheres.json");
+    //await this.loadScene("scenes/simple-spheres.json");
     await this.loadObj(
       "scenes/obj/cornell-box/cornell-box.obj",
-      "scenes/obj/cornell-box/cornell-box.mtl"
+      "scenes/obj/cornell-box/cornell-box.mtl",
+      "scenes/obj/sponza/textures/lion.png"
     );
   };
 
@@ -63,16 +65,29 @@ export default class Renderer extends BaseComponent {
     });
   };
 
-  loadObj = async (objFile, mtlFile) => {
+  loadObj = async (objFile, mtlFile, ...textureFiles) => {
     let objRequest = await fetch(objFile);
     let mtlRequest = await fetch(mtlFile);
     let objData = await objRequest.text();
     let mtlData = await mtlRequest.text();
+
+    let textures = [];
+    for (let texture of textureFiles) {
+      let textureRequest = await fetch(texture);
+      let textureData = await textureRequest.arrayBuffer();
+      textures.push({
+        Name: texture.split("/").pop(),
+        Buffer: textureData, //this.arrayBufferToBase64(textureData),
+      });
+    }
+
     await this.setStateAsync({
       ...this.state,
       objData: objData,
       mtlData: mtlData,
     });
+
+    this.textureData = textures;
   };
 
   getWasmMd5 = (arrayBuffer) => {
@@ -144,6 +159,11 @@ export default class Renderer extends BaseComponent {
       Scene: {}, //this.state.sceneData,
       ObjBuffer: this.state.objData,
       MtlBuffer: this.state.mtlData,
+      RawTextures: this.textureData.map((texture) => {
+        return {
+          Name: texture.Name,
+        };
+      }),
       WorkerId: 0,
     };
 
@@ -155,7 +175,10 @@ export default class Renderer extends BaseComponent {
     let workerIds = [...Array(params.workerCount).keys()];
     let workerPromises = [];
     for (let workerId of workerIds) {
-      let workerPromise = this.setupWorker(workerId, initializeParams);
+      let workerPromise = this.setupWorker(
+        workerId,
+        JSON.parse(JSON.stringify(initializeParams))
+      );
       workerPromises.push(workerPromise);
     }
 
@@ -320,14 +343,25 @@ export default class Renderer extends BaseComponent {
   };
 
   initializeWorker = async (worker, params) => {
+    // Split texture data from params
+    let textureData = [];
+
+    for (let texture of this.textureData) {
+      textureData.push(texture.Buffer.slice(0));
+    }
+
     // Start the worker
     // Each worker has to compile the source because it is not possible to
-    worker.worker.postMessage({
-      workerId: worker.workerId,
-      module: this.moduleData,
-      type: "initialize",
-      initializeParams: JSON.stringify(params),
-    });
+    worker.worker.postMessage(
+      {
+        workerId: worker.workerId,
+        module: this.moduleData,
+        type: "initialize",
+        initializeParams: JSON.stringify(params),
+        textureData: textureData,
+      },
+      textureData
+    );
   };
 
   renderWorker = async (worker, params) => {
@@ -373,6 +407,16 @@ export default class Renderer extends BaseComponent {
   };
 
   onParamsChanged = async () => {};
+
+  arrayBufferToBase64 = (buffer) => {
+    var binary = "";
+    var bytes = new Uint8Array(buffer);
+    var len = bytes.byteLength;
+    for (var i = 0; i < len; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary);
+  };
 
   render() {
     let endTime = this.state.completed ? this.state.endTime : Date.now();

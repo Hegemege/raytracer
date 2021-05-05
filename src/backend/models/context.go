@@ -15,6 +15,7 @@ type RenderContext struct {
 	Settings      RenderSettings
 	ObjBuffer     string
 	MtlBuffer     string
+	RawTextures   []Texture
 	Object        *gwob.Obj
 	MaterialLib   *gwob.MaterialLib
 	DebugMaterial *gwob.Material
@@ -26,6 +27,8 @@ type RenderContext struct {
 
 	// Statistics
 	Rays uint64
+
+	TextureLookup map[string]*Texture
 }
 
 type RenderPass struct {
@@ -37,7 +40,7 @@ type RenderPass struct {
 	Height  int
 }
 
-func (context *RenderContext) Initialize() error {
+func (context *RenderContext) Initialize(rawTextureData []*[]byte) error {
 	if math.Abs(float64(context.Camera.Transform.Trace())) < 0.001 {
 		context.Camera.Transform = mgl32.Ident4()
 	}
@@ -79,6 +82,16 @@ func (context *RenderContext) Initialize() error {
 			Tr:    0.0,
 		}
 
+		// Build texture map
+		context.TextureLookup = make(map[string]*Texture)
+		for i, texture := range context.RawTextures {
+			// Read the texture
+			rawData := rawTextureData[i]
+			t := NewTexture(texture.Name, rawData)
+			context.TextureLookup[texture.Name] = t
+		}
+
+		// Build triangles
 		context.Triangles = make([]Triangle, 0)
 
 		for _, group := range context.Object.Groups {
