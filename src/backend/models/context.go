@@ -100,17 +100,19 @@ func (context *RenderContext) Initialize() error {
 				v1 := mgl32.Vec3{c3, c4, c5}
 				v2 := mgl32.Vec3{c6, c7, c8}
 
+				normal := v1.Sub(v0).Cross(v2.Sub(v0)).Normalize()
+
 				tri := Triangle{
 					Vertices: [3]mgl32.Vec3{v0, v1, v2},
-					Normal:   v1.Sub(v0).Cross(v2.Sub(v0)).Normalize(),
+					Normal:   normal,
 					Material: material,
 					Edge0:    v1.Sub(v0),
 					Edge1:    v2.Sub(v1),
 					Edge2:    v0.Sub(v2),
+					//LocalM:   mgl32.Mat3FromCols(v1.Sub(v0), v2.Sub(v0), normal).Inv(),
 				}
 
-				//tri := NewTriangle(v0, v1, v2)
-				//tri.Material = material
+				//tri.LocalN = tri.LocalM.Mul(-1).Mul3x1(v0)
 
 				context.Triangles = append(context.Triangles, tri)
 			}

@@ -101,7 +101,7 @@ func NewTriangle(v0 mgl32.Vec3, v1 mgl32.Vec3, v2 mgl32.Vec3) *Triangle {
 */
 
 /*
-func (triangle *Triangle) RayIntersect(ray *Ray) float32 {
+func (triangle *Triangle) RayIntersect(ray *Ray) (float32, float32, float32) {
 	// Woop04
 	transformed_origin := triangle.LocalM.Mul3x1(ray.Origin).Add(triangle.LocalN)
 	transformed_dir := triangle.LocalM.Mul3x1(ray.Direction)
@@ -111,9 +111,9 @@ func (triangle *Triangle) RayIntersect(ray *Ray) float32 {
 	v := transformed_origin.Y() + transformed_dir.Y()*t
 
 	if u <= 0.0 || v <= 0.0 || u+v >= 1.0 {
-		return -1
+		return -1, -1, -1
 	}
 
-	return t
+	return t, u, v
 }
 */
