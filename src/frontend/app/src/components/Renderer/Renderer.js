@@ -45,8 +45,12 @@ export default class Renderer extends BaseComponent {
     //await this.loadScene("scenes/simple-spheres.json");
     await this.loadObj(
       "scenes/obj/cornell-box/cornell-box.obj",
-      "scenes/obj/cornell-box/cornell-box.mtl",
-      "scenes/obj/sponza/textures/lion.png"
+      "scenes/obj/cornell-box/cornell-box.mtl"
+
+      //"scenes/obj/sponza/sponza.obj",
+      //"scenes/obj/sponza/sponza.mtl"
+
+      //"scenes/obj/sponza/textures/lion.png"
     );
   };
 

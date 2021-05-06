@@ -57,13 +57,15 @@ func (context *RenderContext) Initialize(rawTextureData []*[]byte) error {
 
 	context.Scene.LinkMaterials()
 	if len(context.ObjBuffer) > 0 && len(context.MtlBuffer) > 0 {
-		options := &gwob.ObjParserOptions{LogStats: context.Settings.Debug, Logger: func(msg string) { println(msg) }}
-		obj, err := gwob.NewObjFromBuf("scene", []byte(context.ObjBuffer), options)
+		optionsLogger := &gwob.ObjParserOptions{LogStats: context.Settings.Debug, Logger: func(msg string) { println(msg) }}
+		//options := &gwob.ObjParserOptions{LogStats: context.Settings.Debug, Logger: nil}
+
+		obj, err := gwob.NewObjFromBuf("scene", []byte(context.ObjBuffer), optionsLogger)
 		if err != nil {
 			return err
 		}
 
-		mtl, err := gwob.ReadMaterialLibFromBuf([]byte(context.MtlBuffer), nil)
+		mtl, err := gwob.ReadMaterialLibFromBuf([]byte(context.MtlBuffer), optionsLogger)
 		if err != nil {
 			return err
 		}
@@ -138,8 +140,10 @@ func (context *RenderContext) Initialize(rawTextureData []*[]byte) error {
 		var up mgl32.Vec3
 		var shortestSide mgl32.Vec3
 		var middleSide mgl32.Vec3
+		var found bool
 		for _, triangle := range context.Triangles {
 			if triangle.Material.Name == "Light" {
+				found = true
 				normal = triangle.Normal
 				// Choose the edge to cross normal with to find up
 				// as the edge that is shortest. Up will then
@@ -171,18 +175,28 @@ func (context *RenderContext) Initialize(rawTextureData []*[]byte) error {
 			}
 		}
 
-		center := mgl32.Vec3{(minx + maxx) / 2.0, (miny + maxy) / 2.0, (minz + maxz) / 2.0}
+		if found {
+			center := mgl32.Vec3{(minx + maxx) / 2.0, (miny + maxy) / 2.0, (minz + maxz) / 2.0}
 
-		//transform := mgl32.LookAtV(normal, center, up).Inv()
-		transform := mgl32.Translate3D(center.X(), center.Y(), center.Z())
-		transform = transform.Mul4(mgl32.Mat3FromCols(normal.Cross(up), up, normal).Mat4())
+			//transform := mgl32.LookAtV(normal, center, up).Inv()
+			transform := mgl32.Translate3D(center.X(), center.Y(), center.Z())
+			transform = transform.Mul4(mgl32.Mat3FromCols(normal.Cross(up), up, normal).Mat4())
 
-		size := mgl32.Vec2{shortestSide.Len() / 2.0, middleSide.Len() / 2.0}
-		emission := mgl32.Vec3{100, 100, 100}
+			size := mgl32.Vec2{shortestSide.Len() / 2.0, middleSide.Len() / 2.0}
+			emission := mgl32.Vec3{100, 100, 100}
 
-		light := NewAreaLight(transform, size, emission, normal)
+			light := NewAreaLight(transform, size, emission, normal)
 
-		context.Light = light
+			context.Light = light
+		} else {
+			// Create debug light
+			transform := context.Camera.Transform
+			normal := mgl32.TransformCoordinate(mgl32.Vec3{0, 0, 1}, transform).Sub(transform.Col(3).Vec3())
+			size := mgl32.Vec2{1.0, 1.0}
+			emission := mgl32.Vec3{100, 100, 100}
+			light := NewAreaLight(transform, size, emission, normal)
+			context.Light = light
+		}
 	}
 
 	return nil

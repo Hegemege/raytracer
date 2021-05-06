@@ -177,6 +177,12 @@ func getMaterialParameters(context *models.RenderContext, result *RaycastResult)
 	diffuse = mgl32.Vec3{r, g, b}
 	normal = result.Triangle.Normal
 
+	// Sample texture
+	if result.Triangle.Material.MapKd != "" {
+		//texture := context.TextureLookup[result.Triangle.Material.MapKd]
+		//sample :=
+	}
+
 	// TODO: Normal map, specular map sampling
 	// TODO: Texture sampling
 
