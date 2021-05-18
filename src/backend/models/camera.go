@@ -30,11 +30,11 @@ type Camera struct {
 	OrtographicSize float32
 }
 
-func (camera *Camera) SpawnRays(xoffset int, yoffset int, taskWidth int, taskHeight int, totalWidth int, totalHeight int, taskID int) []Ray {
+func (camera *Camera) SpawnRays(xoffset int, yoffset int, taskWidth int, taskHeight int, totalWidth int, totalHeight int, taskID int) []*Ray {
 	utility.ProgressUpdate(0.0, "spawnRays", taskID, 0)
 
 	rayCount := taskHeight * taskWidth * camera.RaysPerPixel
-	rays := make([]Ray, rayCount)
+	rays := make([]*Ray, rayCount)
 
 	var projectionPlaneTopLeft mgl32.Vec3
 	var projectionPlaneBottomRight mgl32.Vec3
@@ -100,13 +100,7 @@ func (camera *Camera) SpawnRays(xoffset int, yoffset int, taskWidth int, taskHei
 					dir = mgl32.TransformCoordinate(mgl32.Vec3{0, 0, -1}, camera.Transform).Sub(camera.Transform.Col(3).Vec3()).Normalize()
 				}
 
-				ray := Ray{
-					X:         i - xoffset,
-					Y:         j - yoffset,
-					Bounce:    0,
-					Origin:    origin,
-					Direction: dir,
-				}
+				ray := NewRay(origin, dir, 0, i-xoffset, j-yoffset)
 
 				rays[ri] = ray
 				ri++

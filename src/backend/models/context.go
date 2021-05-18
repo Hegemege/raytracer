@@ -19,11 +19,13 @@ type RenderContext struct {
 	Object        *gwob.Obj
 	MaterialLib   *gwob.MaterialLib
 	DebugMaterial *gwob.Material
-	Triangles     []Triangle
+	Triangles     []*Triangle
 	Light         *AreaLight
 	BounceLimit   uint8
 	BounceRays    int
 	WorkerID      int
+
+	BVH *BVH
 
 	// Statistics
 	Rays uint64
@@ -94,7 +96,8 @@ func (context *RenderContext) Initialize(rawTextureData []*[]byte) error {
 		}
 
 		// Build triangles
-		context.Triangles = make([]Triangle, 0)
+		// TODO: Preallocate triangle array length
+		context.Triangles = make([]*Triangle, 0)
 
 		for _, group := range context.Object.Groups {
 			// Each group is an independent object
@@ -115,19 +118,7 @@ func (context *RenderContext) Initialize(rawTextureData []*[]byte) error {
 				v1 := mgl32.Vec3{c3, c4, c5}
 				v2 := mgl32.Vec3{c6, c7, c8}
 
-				normal := v1.Sub(v0).Cross(v2.Sub(v0)).Normalize()
-
-				tri := Triangle{
-					Vertices: [3]mgl32.Vec3{v0, v1, v2},
-					Normal:   normal,
-					Material: material,
-					Edge0:    v1.Sub(v0),
-					Edge1:    v2.Sub(v1),
-					Edge2:    v0.Sub(v2),
-					//LocalM:   mgl32.Mat3FromCols(v1.Sub(v0), v2.Sub(v0), normal).Inv(),
-				}
-
-				//tri.LocalN = tri.LocalM.Mul(-1).Mul3x1(v0)
+				tri := NewTriangle(v0, v1, v2, material)
 
 				context.Triangles = append(context.Triangles, tri)
 			}
@@ -200,4 +191,8 @@ func (context *RenderContext) Initialize(rawTextureData []*[]byte) error {
 	}
 
 	return nil
+}
+
+func (context *RenderContext) BuildBVH() {
+	context.BVH = BuildBVH(context.Triangles)
 }

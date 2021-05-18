@@ -54,13 +54,7 @@ func Trace(context *models.RenderContext, ray *models.Ray) mgl32.Vec3 {
 			shadowRayN := shadowRay.Normalize()
 			lightIncident := shadowRayN.Dot(context.Light.Normal)
 			if lightIncident < 0 {
-				sRay := &models.Ray{
-					Origin:    result.Point,
-					Direction: shadowRayN,
-					X:         ray.X,
-					Y:         ray.Y,
-					Bounce:    ray.Bounce,
-				}
+				sRay := models.NewRay(result.Point, shadowRayN, ray.Bounce, ray.X, ray.Y)
 				shadowResult := rayCast(context, sRay)
 
 				if shadowResult != nil && shadowResult.Triangle.Material.Name == "Light" {
@@ -88,16 +82,10 @@ func Trace(context *models.RenderContext, ray *models.Ray) mgl32.Vec3 {
 		// Sample from hemisphere
 		sample := utility.RandomInHemisphere(result.Triangle.Normal).Normalize()
 
-		bounceRay := models.Ray{
-			Origin:    result.Point, //.Add(sample.Mul(0.01)),
-			Bounce:    ray.Bounce + 1,
-			Direction: sample,
-			X:         ray.X,
-			Y:         ray.Y,
-		}
+		bounceRay := models.NewRay(result.Point, sample, ray.Bounce+1, ray.X, ray.Y)
 
 		// New bounce
-		result = rayCast(context, &bounceRay)
+		result = rayCast(context, bounceRay)
 		indirectCounter++
 
 		brdfTheta := currentDir.Dot(sample) * -1
@@ -159,7 +147,7 @@ func rayCast(context *models.RenderContext, ray *models.Ray) *RaycastResult {
 
 	if tmin < math.MaxFloat32 {
 		return &RaycastResult{
-			Triangle: &context.Triangles[imin],
+			Triangle: context.Triangles[imin],
 			T:        tmin,
 			U:        umin,
 			V:        vmin,

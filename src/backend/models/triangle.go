@@ -1,6 +1,8 @@
 package models
 
 import (
+	"math"
+
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/udhos/gwob"
 )
@@ -10,8 +12,8 @@ type Triangle struct {
 	// TODO: Add vertex normals
 
 	// For Woop intersection
-	LocalM mgl32.Mat3
-	LocalN mgl32.Vec3
+	//LocalM mgl32.Mat3
+	//LocalN mgl32.Vec3
 
 	Normal   mgl32.Vec3
 	Material *gwob.Material
@@ -20,6 +22,29 @@ type Triangle struct {
 	Edge0 mgl32.Vec3
 	Edge1 mgl32.Vec3
 	Edge2 mgl32.Vec3
+
+	Center mgl32.Vec3
+}
+
+func NewTriangle(v0 mgl32.Vec3, v1 mgl32.Vec3, v2 mgl32.Vec3, material *gwob.Material) *Triangle {
+	normal := v1.Sub(v0).Cross(v2.Sub(v0)).Normalize()
+
+	tri := &Triangle{
+		Vertices: [3]mgl32.Vec3{
+			v0, v1, v2,
+		},
+		Normal:   normal,
+		Material: material,
+		Edge0:    v1.Sub(v0),
+		Edge1:    v2.Sub(v1),
+		Edge2:    v0.Sub(v2),
+		Center:   v0.Add(v1).Add(v2).Mul(1.0 / 3.0),
+		//LocalM:   mgl32.Mat3FromCols(v1.Sub(v0), v2.Sub(v0), normal).Inv(),
+	}
+
+	//tri.LocalN = tri.LocalM.Mul(-1).Mul3x1(v0)
+
+	return tri
 }
 
 func (triangle *Triangle) RayIntersect(ray *Ray) (float32, float32, float32) {
@@ -82,6 +107,36 @@ func (triangle *Triangle) GetMiddleEdge() mgl32.Vec3 {
 		return triangle.Edge0
 	}
 	return triangle.Edge2
+}
+
+func GetTriangleBounds(triangles []*Triangle) (mgl32.Vec3, mgl32.Vec3) {
+	var minx, miny, minz float32 = math.MaxFloat32, math.MaxFloat32, math.MaxFloat32
+	var maxx, maxy, maxz float32 = -math.MaxFloat32, -math.MaxFloat32, -math.MaxFloat32
+
+	for _, triangle := range triangles {
+		for _, vertex := range triangle.Vertices {
+			if vertex.X() < minx {
+				minx = vertex.X()
+			}
+			if vertex.Y() < miny {
+				miny = vertex.Y()
+			}
+			if vertex.Z() < minz {
+				minz = vertex.Z()
+			}
+			if vertex.X() > maxx {
+				maxx = vertex.X()
+			}
+			if vertex.Y() > maxy {
+				maxy = vertex.Y()
+			}
+			if vertex.Z() > maxz {
+				maxz = vertex.Z()
+			}
+		}
+	}
+
+	return mgl32.Vec3{minx, miny, minz}, mgl32.Vec3{maxx, maxy, maxz}
 }
 
 /*

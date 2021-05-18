@@ -2,6 +2,7 @@ package models
 
 import (
 	"math"
+	"raytracer/utility"
 	"testing"
 
 	"github.com/go-gl/mathgl/mgl32"
@@ -120,5 +121,23 @@ func TestSphereNormal(t *testing.T) {
 	normal := sphere.NormalAt(hitPoint)
 	if math.Abs(float64(normal.X()-1)) > 0.001 {
 		t.Errorf("Sphere normal not working")
+	}
+}
+
+func BenchmarkRaySphere(b *testing.B) {
+	sphere := Sphere{
+		Object: Object{
+			Position: mgl32.Vec3{0, 0, 0},
+		},
+		Radius: 0.5,
+	}
+	// Create a random ray
+	origin := utility.RandomInUnitSphere().Normalize()
+	direction := utility.RandomInUnitSphere().Normalize()
+	ray := NewRay(origin, direction, 0, 0, 0)
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		sphere.RayIntersect(ray)
 	}
 }

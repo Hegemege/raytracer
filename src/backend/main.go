@@ -47,10 +47,13 @@ func initialize(this js.Value, args []js.Value) interface{} {
 	}
 
 	utility.ProgressUpdate(0.0, "RenderContext.Initialize", -1, 0)
-
 	context.Initialize(rawTextureData)
-
 	utility.ProgressUpdate(1.0, "RenderContext.Initialize", -1, 0)
+
+	utility.ProgressUpdate(0.0, "RenderContext.BuildBVH", -1, 0)
+	context.BuildBVH()
+	utility.ProgressUpdate(1.0, "RenderContext.BuildBVH", -1, 0)
+
 	return nil
 }
 
@@ -92,7 +95,7 @@ func render(this js.Value, args []js.Value) interface{} {
 			progress := float32(updateIndex) / float32(len(rays))
 			utility.ProgressUpdate(progress, "trace", pass.TaskID, context.Rays)
 		}
-		rayColor := process.Trace(context, &ray)
+		rayColor := process.Trace(context, ray)
 
 		colors[ray.X+ray.Y*pass.Width] = colors[ray.X+ray.Y*pass.Width].Add(rayColor)
 	}

@@ -91,7 +91,6 @@ export default class RendererParams extends BaseComponent {
   };
 
   handleProjectionChanged = async (event) => {
-    console.log(this.state.params.projection, event);
     await this.setStateAsync({
       ...this.state,
       params: {
@@ -170,7 +169,7 @@ export default class RendererParams extends BaseComponent {
               <Form.Label>Projection</Form.Label>
               <Form.Control
                 as="select"
-                value={this.state.params.projection}
+                defaultValue={this.state.params.projection}
                 onChange={this.handleProjectionChanged}
               >
                 <option>Perspective</option>

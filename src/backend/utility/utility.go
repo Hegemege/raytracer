@@ -67,3 +67,10 @@ func RandomInUnitSphere() mgl32.Vec3 {
 		}
 	}
 }
+
+func BoolToInt(b bool) uint8 {
+	if b {
+		return 1
+	}
+	return 0
+}
