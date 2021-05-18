@@ -121,7 +121,7 @@ func rayCast(context *models.RenderContext, ray *models.Ray) *RaycastResult {
 	var tmin float32 = math.MaxFloat32
 	var umin float32 = 0.0
 	var vmin float32 = 0.0
-	var imin int // Triangle index
+	var tri *models.Triangle // Triangle index
 
 	/*
 		for _, sphere := range context.Scene.Spheres {
@@ -132,11 +132,11 @@ func rayCast(context *models.RenderContext, ray *models.Ray) *RaycastResult {
 		}
 	*/
 
-	context.BVH.Root.WalkNode(ray, &tmin, &umin, &vmin, &imin)
+	context.BVH.Root.WalkNode(ray, &tmin, &umin, &vmin, &tri)
 
 	if tmin < math.MaxFloat32 {
 		return &RaycastResult{
-			Triangle: context.Triangles[imin],
+			Triangle: tri,
 			T:        tmin,
 			U:        umin,
 			V:        vmin,

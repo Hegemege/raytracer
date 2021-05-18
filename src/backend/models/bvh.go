@@ -30,6 +30,7 @@ func BuildBVH(context *RenderContext, triangles []*Triangle) *BVH {
 	bvh := &BVH{}
 	index := 0
 	root := buildBVHNode(context, triangles, 0, &index)
+	fmt.Printf("BVH has %d nodes\n", index)
 	bvh.Root = root
 	return bvh
 }
@@ -47,9 +48,8 @@ func buildBVHNode(context *RenderContext, triangles []*Triangle, depth int, inde
 
 	// Calculate bounds for the node
 	min, max := GetTriangleBounds(triangles)
-	bounds := NewAABBMinMax(min, max)
-	node.Bounds = bounds
-	node.Triangles = triangles
+	node.Bounds = NewAABBMinMax(min, max)
+	node.Triangles = triangles[:]
 
 	triCount := len(triangles)
 
@@ -57,8 +57,6 @@ func buildBVHNode(context *RenderContext, triangles []*Triangle, depth int, inde
 	if triCount > context.Settings.BVHMaxLeafSize && context.Settings.UseBVH {
 		splitPlane := GetSplitPlaneSAH(node)
 		splitPlaneVec3 := splitPlane.Vec3()
-
-		fmt.Printf("split by %v\n", splitPlane)
 
 		sort.SliceStable(node.Triangles, func(i, j int) bool {
 			return splitPlaneVec3.Dot(node.Triangles[i].Center) < splitPlaneVec3.Dot(node.Triangles[j].Center)
@@ -76,10 +74,8 @@ func buildBVHNode(context *RenderContext, triangles []*Triangle, depth int, inde
 		// Fix possible errors in splitindex calc
 		if splitIndex == 0 || splitIndex == triCount-1 {
 			splitIndex = triCount / 2
-			println("Split index is at the edge, moving to center")
+			//println("Split index is at the edge, moving to center")
 		}
-
-		fmt.Printf("split %d at %d\n", triCount, splitIndex)
 
 		leftTriangles := node.Triangles[:splitIndex]
 		node.LeftChild = buildBVHNode(context, leftTriangles, depth+1, index)
@@ -92,9 +88,10 @@ func buildBVHNode(context *RenderContext, triangles []*Triangle, depth int, inde
 }
 
 // Returns the leaf node or nil if ray did not hit the volume
-func (node *BVHNode) WalkNode(ray *Ray, tmin *float32, umin *float32, vmin *float32, imin *int) {
+func (node *BVHNode) WalkNode(ray *Ray, tmin *float32, umin *float32, vmin *float32, tri **Triangle) {
+
 	if node.LeftChild == nil {
-		for i, triangle := range node.Triangles {
+		for _, triangle := range node.Triangles {
 			if triangle.Normal.Dot(ray.Direction) > 0 {
 				continue
 			}
@@ -103,18 +100,18 @@ func (node *BVHNode) WalkNode(ray *Ray, tmin *float32, umin *float32, vmin *floa
 				*tmin = t
 				*umin = u
 				*vmin = v
-				*imin = i
+				*tri = triangle
 			}
 		}
 	} else {
 		leftHit, leftTMin, leftTMax := node.LeftChild.Bounds.RayIntersect(ray)
 		if leftHit && leftTMin < *tmin && leftTMax > 0 {
-			node.LeftChild.WalkNode(ray, tmin, umin, vmin, imin)
+			node.LeftChild.WalkNode(ray, tmin, umin, vmin, tri)
 		}
 
 		rightHit, rightTMin, rightTMax := node.RightChild.Bounds.RayIntersect(ray)
 		if rightHit && rightTMin < *tmin && rightTMax > 0 {
-			node.RightChild.WalkNode(ray, tmin, umin, vmin, imin)
+			node.RightChild.WalkNode(ray, tmin, umin, vmin, tri)
 		}
 	}
 
