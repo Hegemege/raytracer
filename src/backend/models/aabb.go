@@ -2,6 +2,11 @@ package models
 
 import "github.com/go-gl/mathgl/mgl32"
 
+type MinimalAABB struct {
+	Min mgl32.Vec3
+	Max mgl32.Vec3
+}
+
 // Axis-aligned bounding box
 type AABB struct {
 	Position mgl32.Vec3
@@ -50,6 +55,10 @@ func NewAABBMinMax(min mgl32.Vec3, max mgl32.Vec3) *AABB {
 	}
 }
 
+func NewAABBFromMinimal(aabb MinimalAABB) *AABB {
+	return NewAABBMinMax(aabb.Min, aabb.Max)
+}
+
 func (aabb *AABB) RayIntersect(ray *Ray) (bool, float32, float32) {
 	// From https://www.scratchapixel.com/lessons/3d-basic-rendering/minimal-ray-tracer-rendering-simple-shapes/ray-box-intersection
 	var tmin, tmax, tymin, tymax, tzmin, tzmax float32
@@ -87,4 +96,14 @@ func (aabb *AABB) RayIntersect(ray *Ray) (bool, float32, float32) {
 	}
 
 	return true, tmin, tmax
+}
+
+func (aabb *AABB) Area() float32 {
+	d := aabb.Max.Sub(aabb.Min)
+	return 2 * (d.X()*d.Y() + d.X()*d.Z() + d.Y()*d.Z())
+}
+
+func (aabb *MinimalAABB) Area() float32 {
+	d := aabb.Max.Sub(aabb.Min)
+	return 2 * (d.X()*d.Y() + d.X()*d.Z() + d.Y()*d.Z())
 }

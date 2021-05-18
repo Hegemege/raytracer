@@ -157,6 +157,8 @@ export default class Renderer extends BaseComponent {
         Debug: false,
         GammaCorrection: params.gammaCorrection,
         Gamma: parseFloat(params.gamma),
+        UseBVH: params.useBVH,
+        BVHMaxLeafSize: params.maxLeafSize,
       },
       BounceLimit: params.bounces,
       BounceRays: params.bounceRays,

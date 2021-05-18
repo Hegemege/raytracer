@@ -21,21 +21,22 @@ type Ray struct {
 }
 
 func NewRay(origin mgl32.Vec3, dir mgl32.Vec3, bounce uint8, x int, y int) *Ray {
+	invDir := mgl32.Vec3{
+		1.0 / dir.X(),
+		1.0 / dir.Y(),
+		1.0 / dir.Z(),
+	}
 	return &Ray{
-		Origin:    origin,
-		Direction: dir,
-		Bounce:    bounce,
-		X:         x,
-		Y:         y,
-		InvDirection: mgl32.Vec3{
-			1.0 / dir.X(),
-			1.0 / dir.Y(),
-			1.0 / dir.Z(),
-		},
+		Origin:       origin,
+		Direction:    dir,
+		Bounce:       bounce,
+		X:            x,
+		Y:            y,
+		InvDirection: invDir,
 		Sign: [3]uint8{
-			utility.BoolToInt(dir.X() < 0),
-			utility.BoolToInt(dir.Y() < 0),
-			utility.BoolToInt(dir.Z() < 0),
+			utility.BoolToInt(invDir.X() < 0),
+			utility.BoolToInt(invDir.Y() < 0),
+			utility.BoolToInt(invDir.Z() < 0),
 		},
 	}
 }

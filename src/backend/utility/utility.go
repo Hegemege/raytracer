@@ -74,3 +74,21 @@ func BoolToInt(b bool) uint8 {
 	}
 	return 0
 }
+
+// Returns combined minimum of the two vectors
+func Vec3Min(v1 mgl32.Vec3, v2 mgl32.Vec3) mgl32.Vec3 {
+	return mgl32.Vec3{
+		float32(math.Min(float64(v1.X()), float64(v2.X()))),
+		float32(math.Min(float64(v1.Y()), float64(v2.Y()))),
+		float32(math.Min(float64(v1.Z()), float64(v2.Z()))),
+	}
+}
+
+// Returns combined maximum of the two vectors
+func Vec3Max(v1 mgl32.Vec3, v2 mgl32.Vec3) mgl32.Vec3 {
+	return mgl32.Vec3{
+		float32(math.Max(float64(v1.X()), float64(v2.X()))),
+		float32(math.Max(float64(v1.Y()), float64(v2.Y()))),
+		float32(math.Max(float64(v1.Z()), float64(v2.Z()))),
+	}
+}

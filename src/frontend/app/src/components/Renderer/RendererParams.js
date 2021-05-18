@@ -32,6 +32,8 @@ export default class RendererParams extends BaseComponent {
         rngSeed: this.getNewSeed(),
         gammaCorrection: true,
         gamma: "2.2",
+        useBVH: true,
+        maxLeafSize: 6,
       },
     };
   }
@@ -362,6 +364,24 @@ export default class RendererParams extends BaseComponent {
                 label="Gamma"
                 value={this.state.params.gamma}
                 onChange={(e) => this.handleFloatParamChanged(e, "gamma")}
+              />
+            </Form.Group>
+            <Form.Group controlId="formCheckboxUseBVH" className="form-margin">
+              <Form.Check
+                type="checkbox"
+                label="Use BVH"
+                checked={this.state.params.useBVH}
+                onChange={(e) => this.handleBoolParamChanged(e, "useBVH")}
+              />
+            </Form.Group>
+            <Form.Group controlId="formMaxLeafSize" className="form-margin">
+              <Form.Label>Max Leaf Tris</Form.Label>
+              <Form.Control
+                htmlSize="6"
+                type="text"
+                label="Max Leaf Tris"
+                value={this.state.params.maxLeafSize}
+                onChange={(e) => this.handleIntParamChanged(e, "maxLeafSize")}
               />
             </Form.Group>
           </Row>

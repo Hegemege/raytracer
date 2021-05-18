@@ -132,18 +132,7 @@ func rayCast(context *models.RenderContext, ray *models.Ray) *RaycastResult {
 		}
 	*/
 
-	for i, triangle := range context.Triangles {
-		if triangle.Normal.Dot(ray.Direction) > 0 {
-			continue
-		}
-		t, u, v := triangle.RayIntersect(ray)
-		if t > 0 && t < tmin {
-			tmin = t
-			umin = u
-			vmin = v
-			imin = i
-		}
-	}
+	context.BVH.Root.WalkNode(ray, &tmin, &umin, &vmin, &imin)
 
 	if tmin < math.MaxFloat32 {
 		return &RaycastResult{

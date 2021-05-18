@@ -2,6 +2,7 @@ package models
 
 import (
 	"math"
+	"raytracer/utility"
 
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/udhos/gwob"
@@ -24,6 +25,8 @@ type Triangle struct {
 	Edge2 mgl32.Vec3
 
 	Center mgl32.Vec3
+	Min    mgl32.Vec3
+	Max    mgl32.Vec3
 }
 
 func NewTriangle(v0 mgl32.Vec3, v1 mgl32.Vec3, v2 mgl32.Vec3, material *gwob.Material) *Triangle {
@@ -39,6 +42,8 @@ func NewTriangle(v0 mgl32.Vec3, v1 mgl32.Vec3, v2 mgl32.Vec3, material *gwob.Mat
 		Edge1:    v2.Sub(v1),
 		Edge2:    v0.Sub(v2),
 		Center:   v0.Add(v1).Add(v2).Mul(1.0 / 3.0),
+		Min:      utility.Vec3Min(utility.Vec3Min(v0, v1), v2),
+		Max:      utility.Vec3Max(utility.Vec3Max(v0, v1), v2),
 		//LocalM:   mgl32.Mat3FromCols(v1.Sub(v0), v2.Sub(v0), normal).Inv(),
 	}
 

@@ -5,4 +5,6 @@ type RenderSettings struct {
 	Debug             bool
 	GammaCorrection   bool
 	Gamma             float32
+	UseBVH            bool
+	BVHMaxLeafSize    int
 }
