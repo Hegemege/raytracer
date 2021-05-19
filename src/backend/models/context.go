@@ -194,5 +194,5 @@ func (context *RenderContext) Initialize(rawTextureData []*[]byte) error {
 }
 
 func (context *RenderContext) BuildBVH() {
-	context.BVH = BuildBVH(context, context.Triangles)
+	context.BVH = BuildBVH(context)
 }

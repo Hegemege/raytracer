@@ -132,7 +132,7 @@ func rayCast(context *models.RenderContext, ray *models.Ray) *RaycastResult {
 		}
 	*/
 
-	context.BVH.Root.WalkNode(ray, &tmin, &umin, &vmin, &tri)
+	context.BVH.Root.WalkNode(context.Triangles, ray, &tmin, &umin, &vmin, &tri)
 
 	if tmin < math.MaxFloat32 {
 		return &RaycastResult{
