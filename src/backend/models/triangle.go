@@ -9,6 +9,7 @@ import (
 )
 
 type Triangle struct {
+	Index    int
 	Vertices [3]mgl32.Vec3
 	// TODO: Add vertex normals
 
@@ -29,10 +30,11 @@ type Triangle struct {
 	Max    mgl32.Vec3
 }
 
-func NewTriangle(v0 mgl32.Vec3, v1 mgl32.Vec3, v2 mgl32.Vec3, material *gwob.Material) *Triangle {
+func NewTriangle(v0 mgl32.Vec3, v1 mgl32.Vec3, v2 mgl32.Vec3, material *gwob.Material, index int) *Triangle {
 	normal := v1.Sub(v0).Cross(v2.Sub(v0)).Normalize()
 
 	tri := &Triangle{
+		Index: index,
 		Vertices: [3]mgl32.Vec3{
 			v0, v1, v2,
 		},

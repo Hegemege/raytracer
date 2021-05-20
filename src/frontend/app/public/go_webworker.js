@@ -15,6 +15,8 @@ function progressUpdate(params) {
   let go = null;
   let workerId = null;
   let renderFunc = null;
+  let buildBVHFunc = null;
+  let loadBVHFunc = null;
 
   onmessage = async (e) => {
     // Sending logging events to main thread
@@ -62,10 +64,27 @@ function progressUpdate(params) {
         "ms"
       );
       renderFunc = self.render;
+      buildBVHFunc = self.buildBVH;
+      loadBVHFunc = self.loadBVH;
 
       // Worker manager is allowed to send render messages to this worker
       postMessage({
         initDone: true,
+      });
+    } else if (e.data.type === "buildBVH") {
+      log(workerId, "Building BVH");
+      let buildStartTime = Date.now();
+
+      // Main render call
+      let outputRaw = buildBVHFunc();
+
+      log(workerId, "Building BVH complete!");
+      log(workerId, "Took", Date.now() - buildStartTime, "ms");
+
+      postMessage({
+        buildBVHDone: true,
+        workerId: workerId,
+        output: JSON.parse(outputRaw),
       });
     } else if (e.data.type === "render") {
       log(workerId, "Rendering task", e.data.taskId);
@@ -78,7 +97,7 @@ function progressUpdate(params) {
       log(workerId, "Took", Date.now() - renderStartTime, "ms");
 
       postMessage({
-        done: true,
+        renderDone: true,
         workerId: workerId,
         output: JSON.parse(outputRaw),
         params: e.data.renderParams, // return original params for parsing the final image
@@ -86,7 +105,7 @@ function progressUpdate(params) {
     } else if (e.data.type === "askForWork") {
       // Used for the first task
       postMessage({
-        done: true,
+        renderDone: true,
         workerId: workerId,
         output: null,
       });

@@ -21,8 +21,10 @@ var context *models.RenderContext
 func main() {
 	println("Go WebAssembly main")
 
-	js.Global().Set("render", js.FuncOf(render))
 	js.Global().Set("initialize", js.FuncOf(initialize))
+	js.Global().Set("buildBVH", js.FuncOf(buildBVH))
+	js.Global().Set("loadBVH", js.FuncOf(loadBVH))
+	js.Global().Set("render", js.FuncOf(render))
 
 	<-make(chan bool)
 }
@@ -49,10 +51,26 @@ func initialize(this js.Value, args []js.Value) interface{} {
 	utility.ProgressUpdate(0.0, "RenderContext.Initialize", -1, 0)
 	context.Initialize(rawTextureData)
 	utility.ProgressUpdate(1.0, "RenderContext.Initialize", -1, 0)
+	return nil
+}
 
+func buildBVH(this js.Value, args []js.Value) interface{} {
 	utility.ProgressUpdate(0.0, "RenderContext.BuildBVH", -1, 0)
 	context.BuildBVH()
 	utility.ProgressUpdate(1.0, "RenderContext.BuildBVH", -1, 0)
+
+	rawBVH, err := json.Marshal(context.BVH)
+	if err != nil {
+		panic(err)
+	}
+
+	return string(rawBVH)
+}
+
+func loadBVH(this js.Value, args []js.Value) interface{} {
+	utility.ProgressUpdate(0.0, "RenderContext.LoadBVH", -1, 0)
+	context.LoadBVH()
+	utility.ProgressUpdate(1.0, "RenderContext.LoadBVH", -1, 0)
 
 	return nil
 }
@@ -104,14 +122,12 @@ func render(this js.Value, args []js.Value) interface{} {
 
 	utility.ProgressUpdate(0.0, "output", pass.TaskID, context.Rays)
 
-	// Gamma correction
-
 	for j := 0; j < pass.Height; j++ {
 		for i := 0; i < pass.Width; i++ {
-
 			c := colors[i+j*pass.Width]
 			c = c.Mul(1.0 / float32(context.Camera.RaysPerPixel))
 
+			// Gamma correction
 			if context.Settings.GammaCorrection {
 				gamma := float64(1.0 / context.Settings.Gamma)
 				c = mgl32.Vec3{

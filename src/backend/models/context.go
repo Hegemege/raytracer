@@ -106,6 +106,8 @@ func (context *RenderContext) Initialize(rawTextureData []*[]byte) error {
 				material = context.DebugMaterial
 			}
 
+			triangleIndex := 0
+
 			for index := group.IndexBegin; index < group.IndexBegin+group.IndexCount; index += 3 {
 				strideIndex0 := context.Object.Indices[index]
 				strideIndex1 := context.Object.Indices[index+1]
@@ -118,7 +120,8 @@ func (context *RenderContext) Initialize(rawTextureData []*[]byte) error {
 				v1 := mgl32.Vec3{c3, c4, c5}
 				v2 := mgl32.Vec3{c6, c7, c8}
 
-				tri := NewTriangle(v0, v1, v2, material)
+				tri := NewTriangle(v0, v1, v2, material, triangleIndex)
+				triangleIndex++
 
 				context.Triangles = append(context.Triangles, tri)
 			}
@@ -195,4 +198,8 @@ func (context *RenderContext) Initialize(rawTextureData []*[]byte) error {
 
 func (context *RenderContext) BuildBVH() {
 	context.BVH = BuildBVH(context)
+}
+
+func (context *RenderContext) LoadBVH() {
+	context.BVH = LoadBVH(context)
 }

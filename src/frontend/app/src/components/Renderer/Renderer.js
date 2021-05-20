@@ -179,17 +179,33 @@ export default class Renderer extends BaseComponent {
     this.workers = {};
 
     let workerIds = [...Array(params.workerCount).keys()];
-    let workerPromises = [];
+    let setupPromises = [];
     for (let workerId of workerIds) {
       let workerPromise = this.setupWorker(
         workerId,
         JSON.parse(JSON.stringify(initializeParams))
       );
-      workerPromises.push(workerPromise);
+      setupPromises.push(workerPromise);
     }
 
     // Wait for initialization
-    let workers = await Promise.all(workerPromises);
+    let workers = await Promise.all(setupPromises);
+
+    // Build BVH
+    let bvhWorker = workers[0];
+    let bvhPromise = new Promise((resolve) => {
+      bvhWorker.worker.addEventListener("message", async (event) => {
+        if (event.data.buildBVHDone) {
+          resolve(event.data.output);
+        }
+      });
+
+      this.buildBVHWorker(bvhWorker);
+    });
+
+    let bvhData = await bvhPromise;
+
+    console.log(bvhData);
 
     for (let worker of workers) {
       this.workers[worker.workerId] = worker;
@@ -251,93 +267,19 @@ export default class Renderer extends BaseComponent {
     };
 
     return new Promise((resolve) => {
+      worker.worker.addEventListener("message", async (event) => {
+        this.workerLogger(event);
+      });
+      worker.worker.addEventListener("message", async (event) => {
+        this.workerProgressUpdate(event, worker);
+      });
+      worker.worker.addEventListener("message", async (event) => {
+        this.workerRenderDone(event, worker);
+      });
+
       // Listen to messages from the worker
-      workerScript.addEventListener("message", async (event) => {
+      worker.worker.addEventListener("message", async (event) => {
         // Messages from the WebWorker JS side
-        if (event.data.logMessage) {
-          console.log(
-            "%c [WebWorker " +
-              event.data.workerId.toString() +
-              "] " +
-              event.data.message,
-            "color: orange;"
-          );
-          return;
-        }
-
-        if (event.data.progressUpdate) {
-          let workerEventData = {};
-          if (worker.workerId in this.state.renderEventData) {
-            workerEventData = this.state.renderEventData[worker.workerId];
-          }
-
-          let key = event.data.data.event;
-          let progress = event.data.data.progress;
-          let taskId = event.data.data.taskId;
-          let rays = event.data.data.rays;
-
-          if (!(key in workerEventData)) {
-            workerEventData[key] = {};
-          }
-          if (!(taskId in workerEventData[key])) {
-            workerEventData[key][taskId] = {};
-            workerEventData[key][taskId].startTime = Date.now();
-          }
-
-          workerEventData[key][taskId].timer =
-            Date.now() - workerEventData[key][taskId].startTime;
-          workerEventData[key][taskId].progress = progress;
-
-          workerEventData.rays = rays;
-
-          let data = { ...this.state.renderEventData };
-          data[worker.workerId] = workerEventData;
-          await this.setStateAsync({
-            ...this.state,
-            renderEventData: data,
-          });
-        }
-
-        if (event.data.done) {
-          // Completion of the WebWorker
-          if (event.data.output) {
-            let params = JSON.parse(event.data.params);
-            let imageData = [...this.state.imageData];
-            imageData.push({
-              params: params,
-              imageData: event.data.output.imageData,
-            });
-            await this.setStateAsync({
-              ...this.state,
-              imageData: imageData,
-            });
-          }
-
-          // Take a new task
-          if (this.renderTasks.length > 0) {
-            let task = this.renderTasks.pop();
-            this.renderWorker(worker, task);
-          } else {
-            // No tasks left, terminate
-            worker.worker.terminate();
-            worker.done = true;
-
-            // If all workers are done, mark no longer running
-            if (
-              Object.keys(this.workers).filter(
-                (worker) => !this.workers[worker].done
-              ).length == 0
-            ) {
-              await this.setStateAsync({
-                ...this.state,
-                running: false,
-                completed: true,
-                endTime: Date.now(),
-              });
-            }
-          }
-        }
-
         if (event.data.initDone) {
           worker.initialized = true;
           resolve(worker);
@@ -346,6 +288,96 @@ export default class Renderer extends BaseComponent {
 
       this.initializeWorker(worker, initializeParams);
     });
+  };
+
+  workerLogger = async (event) => {
+    if (event.data.logMessage) {
+      console.log(
+        "%c [WebWorker " +
+          event.data.workerId.toString() +
+          "] " +
+          event.data.message,
+        "color: orange;"
+      );
+      return;
+    }
+  };
+
+  workerProgressUpdate = async (event, worker) => {
+    if (event.data.progressUpdate) {
+      let workerEventData = {};
+      if (worker.workerId in this.state.renderEventData) {
+        workerEventData = this.state.renderEventData[worker.workerId];
+      }
+
+      let key = event.data.data.event;
+      let progress = event.data.data.progress;
+      let taskId = event.data.data.taskId;
+      let rays = event.data.data.rays;
+
+      if (!(key in workerEventData)) {
+        workerEventData[key] = {};
+      }
+      if (!(taskId in workerEventData[key])) {
+        workerEventData[key][taskId] = {};
+        workerEventData[key][taskId].startTime = Date.now();
+      }
+
+      workerEventData[key][taskId].timer =
+        Date.now() - workerEventData[key][taskId].startTime;
+      workerEventData[key][taskId].progress = progress;
+
+      workerEventData.rays = rays;
+
+      let data = { ...this.state.renderEventData };
+      data[worker.workerId] = workerEventData;
+      await this.setStateAsync({
+        ...this.state,
+        renderEventData: data,
+      });
+    }
+  };
+
+  workerRenderDone = async (event, worker) => {
+    if (event.data.renderDone) {
+      // Completion of the WebWorker
+      if (event.data.output) {
+        let params = JSON.parse(event.data.params);
+        let imageData = [...this.state.imageData];
+        imageData.push({
+          params: params,
+          imageData: event.data.output.imageData,
+        });
+        await this.setStateAsync({
+          ...this.state,
+          imageData: imageData,
+        });
+      }
+
+      // Take a new task
+      if (this.renderTasks.length > 0) {
+        let task = this.renderTasks.pop();
+        this.renderWorker(worker, task);
+      } else {
+        // No tasks left, terminate
+        worker.worker.terminate();
+        worker.done = true;
+
+        // If all workers are done, mark no longer running
+        if (
+          Object.keys(this.workers).filter(
+            (worker) => !this.workers[worker].done
+          ).length == 0
+        ) {
+          await this.setStateAsync({
+            ...this.state,
+            running: false,
+            completed: true,
+            endTime: Date.now(),
+          });
+        }
+      }
+    }
   };
 
   initializeWorker = async (worker, params) => {
@@ -368,6 +400,15 @@ export default class Renderer extends BaseComponent {
       },
       textureData
     );
+  };
+
+  buildBVHWorker = async (worker) => {
+    // Start the worker
+    // Each worker has to compile the source because it is not possible to
+    worker.worker.postMessage({
+      workerId: worker.workerId,
+      type: "buildBVH",
+    });
   };
 
   renderWorker = async (worker, params) => {

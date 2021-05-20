@@ -8,7 +8,7 @@ import (
 )
 
 func BenchmarkRayTriangle(b *testing.B) {
-	triangle := NewTriangle(mgl32.Vec3{0, 0, 0}, mgl32.Vec3{1, 0, 0}, mgl32.Vec3{0, 1, 0}, nil)
+	triangle := NewTriangle(mgl32.Vec3{0, 0, 0}, mgl32.Vec3{1, 0, 0}, mgl32.Vec3{0, 1, 0}, nil, 0)
 	// Create a random ray
 	origin := utility.RandomInUnitSphere().Normalize()
 	direction := utility.RandomInUnitSphere().Normalize()

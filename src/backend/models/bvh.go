@@ -36,6 +36,10 @@ func BuildBVH(context *RenderContext) *BVH {
 	return bvh
 }
 
+func LoadBVH(context *RenderContext) *BVH {
+	return nil
+}
+
 func buildBVHNode(context *RenderContext, triangles []*Triangle, startIndex int, endIndex int, depth int, index *int) *BVHNode {
 	// Takes the given slice of triangles, sorts them along the major axis
 	// and splits into children until leaf nodes contain the wanted number of triangles
@@ -60,8 +64,13 @@ func buildBVHNode(context *RenderContext, triangles []*Triangle, startIndex int,
 		splitPlane := GetSplitPlaneSAH(triangles, node)
 		splitPlaneVec3 := splitPlane.Vec3()
 
-		sort.SliceStable(triangles[startIndex:endIndex+1], func(i, j int) bool {
-			return splitPlaneVec3.Dot(triangles[startIndex+i].Center) < splitPlaneVec3.Dot(triangles[startIndex+j].Center)
+		sort.Slice(triangles[startIndex:endIndex+1], func(i, j int) bool {
+			a := splitPlaneVec3.Dot(triangles[startIndex+i].Center)
+			b := splitPlaneVec3.Dot(triangles[startIndex+j].Center)
+			if a == b {
+				return triangles[startIndex+i].Index < triangles[startIndex+j].Index
+			}
+			return a < b
 		})
 
 		splitIndex := startIndex
@@ -133,8 +142,13 @@ func GetSplitPlaneSAH(triangles []*Triangle, node *BVHNode) mgl32.Vec4 {
 
 	for _, axis := range axes {
 		// Sort the triangle slice along the given axis, compare by center
-		sort.SliceStable(triangles[node.StartIndex:node.EndIndex+1], func(i, j int) bool {
-			return axis.Dot(triangles[node.StartIndex+i].Center) < axis.Dot(triangles[node.StartIndex+j].Center)
+		sort.Slice(triangles[node.StartIndex:node.EndIndex+1], func(i, j int) bool {
+			a := axis.Dot(triangles[node.StartIndex+i].Center)
+			b := axis.Dot(triangles[node.StartIndex+j].Center)
+			if a == b {
+				return triangles[node.StartIndex+i].Index < triangles[node.StartIndex+j].Index
+			}
+			return a < b
 		})
 
 		leftMin, leftMax := triangles[node.StartIndex].Min, triangles[node.StartIndex].Max
