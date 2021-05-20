@@ -193,7 +193,7 @@ export default class Renderer extends BaseComponent {
 
     // Build BVH
     let bvhWorker = workers[0];
-    let bvhPromise = new Promise((resolve) => {
+    let buildBVHPromise = new Promise((resolve) => {
       bvhWorker.worker.addEventListener("message", async (event) => {
         if (event.data.buildBVHDone) {
           resolve(event.data.output);
@@ -203,9 +203,25 @@ export default class Renderer extends BaseComponent {
       this.buildBVHWorker(bvhWorker);
     });
 
-    let bvhData = await bvhPromise;
+    let bvhData = await buildBVHPromise;
 
-    console.log(bvhData);
+    // Load BVH to all workers
+    let loadBVHPromises = [];
+    for (let worker of workers) {
+      loadBVHPromises.push(
+        new Promise((resolve) => {
+          worker.worker.addEventListener("message", async (event) => {
+            if (event.data.loadBVHDone) {
+              resolve();
+            }
+          });
+
+          this.loadBVHWorker(worker, bvhData);
+        })
+      );
+    }
+
+    await Promise.all(loadBVHPromises);
 
     for (let worker of workers) {
       this.workers[worker.workerId] = worker;
@@ -408,6 +424,16 @@ export default class Renderer extends BaseComponent {
     worker.worker.postMessage({
       workerId: worker.workerId,
       type: "buildBVH",
+    });
+  };
+
+  loadBVHWorker = async (worker, bvhData) => {
+    // Start the worker
+    // Each worker has to compile the source because it is not possible to
+    worker.worker.postMessage({
+      workerId: worker.workerId,
+      type: "loadBVH",
+      bvhData: bvhData,
     });
   };
 

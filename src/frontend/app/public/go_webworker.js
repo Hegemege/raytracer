@@ -73,18 +73,31 @@ function progressUpdate(params) {
       });
     } else if (e.data.type === "buildBVH") {
       log(workerId, "Building BVH");
-      let buildStartTime = Date.now();
+      let buildBVHStartTime = Date.now();
 
-      // Main render call
       let outputRaw = buildBVHFunc();
 
       log(workerId, "Building BVH complete!");
-      log(workerId, "Took", Date.now() - buildStartTime, "ms");
+      log(workerId, "Took", Date.now() - buildBVHStartTime, "ms");
 
       postMessage({
         buildBVHDone: true,
         workerId: workerId,
         output: JSON.parse(outputRaw),
+      });
+    } else if (e.data.type === "loadBVH") {
+      log(workerId, "Loading BVH");
+      let loadBVHStartTime = Date.now();
+
+      let bvhDataRaw = JSON.stringify(e.data.bvhData);
+      loadBVHFunc(bvhDataRaw);
+
+      log(workerId, "Loading BVH complete!");
+      log(workerId, "Took", Date.now() - loadBVHStartTime, "ms");
+
+      postMessage({
+        loadBVHDone: true,
+        workerId: workerId,
       });
     } else if (e.data.type === "render") {
       log(workerId, "Rendering task", e.data.taskId);

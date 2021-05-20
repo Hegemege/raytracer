@@ -56,10 +56,10 @@ func initialize(this js.Value, args []js.Value) interface{} {
 
 func buildBVH(this js.Value, args []js.Value) interface{} {
 	utility.ProgressUpdate(0.0, "RenderContext.BuildBVH", -1, 0)
-	context.BuildBVH()
+	bvh := context.BuildBVH()
 	utility.ProgressUpdate(1.0, "RenderContext.BuildBVH", -1, 0)
 
-	rawBVH, err := json.Marshal(context.BVH)
+	rawBVH, err := json.Marshal(bvh)
 	if err != nil {
 		panic(err)
 	}
@@ -68,8 +68,14 @@ func buildBVH(this js.Value, args []js.Value) interface{} {
 }
 
 func loadBVH(this js.Value, args []js.Value) interface{} {
+	bvh := &models.BVH{}
+	err := json.Unmarshal([]byte(args[0].String()), bvh)
+	if err != nil {
+		panic(err)
+	}
+
 	utility.ProgressUpdate(0.0, "RenderContext.LoadBVH", -1, 0)
-	context.LoadBVH()
+	context.LoadBVH(bvh)
 	utility.ProgressUpdate(1.0, "RenderContext.LoadBVH", -1, 0)
 
 	return nil

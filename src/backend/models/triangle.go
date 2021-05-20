@@ -3,6 +3,7 @@ package models
 import (
 	"math"
 	"raytracer/utility"
+	"sort"
 
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/udhos/gwob"
@@ -52,6 +53,17 @@ func NewTriangle(v0 mgl32.Vec3, v1 mgl32.Vec3, v2 mgl32.Vec3, material *gwob.Mat
 	//tri.LocalN = tri.LocalM.Mul(-1).Mul3x1(v0)
 
 	return tri
+}
+
+func TriangleSorter(axis mgl32.Vec3, triangles []*Triangle, startIndex int, endIndex int) {
+	sort.Slice(triangles[startIndex:endIndex+1], func(i, j int) bool {
+		a := axis.Dot(triangles[startIndex+i].Center)
+		b := axis.Dot(triangles[startIndex+j].Center)
+		if a == b {
+			return triangles[startIndex+i].Index < triangles[startIndex+j].Index
+		}
+		return a < b
+	})
 }
 
 func (triangle *Triangle) RayIntersect(ray *Ray) (float32, float32, float32) {

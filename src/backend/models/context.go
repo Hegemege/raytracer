@@ -196,10 +196,11 @@ func (context *RenderContext) Initialize(rawTextureData []*[]byte) error {
 	return nil
 }
 
-func (context *RenderContext) BuildBVH() {
-	context.BVH = BuildBVH(context)
+func (context *RenderContext) BuildBVH() *BVH {
+	return BuildBVH(context)
 }
 
-func (context *RenderContext) LoadBVH() {
-	context.BVH = LoadBVH(context)
+func (context *RenderContext) LoadBVH(bvh *BVH) {
+	context.BVH = bvh
+	context.BVH.Load(context.Triangles)
 }
