@@ -94,6 +94,8 @@ func render(this js.Value, args []js.Value) interface{} {
 		return handleError(err, &result)
 	}
 
+	context.Rays = 0
+
 	// Fill with black
 	result.ImageData = image.NewRGBA(image.Rect(0, 0, pass.Width, pass.Height))
 	draw.Draw(result.ImageData, result.ImageData.Bounds(), &image.Uniform{color.Black}, image.Point{}, draw.Src)

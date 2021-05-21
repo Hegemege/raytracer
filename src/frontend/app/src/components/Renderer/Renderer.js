@@ -24,9 +24,12 @@ export default class Renderer extends BaseComponent {
     this.workers = {};
     this.state = {
       running: false,
+      initialized: false,
       completed: false,
-      startTime: null,
-      endTime: null,
+      initializeStartTime: null,
+      initializeEndTime: null,
+      renderStartTime: null,
+      renderEndTime: null,
       reloadOnRender: true,
       imageData: null,
       imageDetails: null,
@@ -38,6 +41,8 @@ export default class Renderer extends BaseComponent {
       renderTasks: [],
     };
     this.textureData = [];
+    this.renderTasks = [];
+    this.taskIdBase = 0;
   }
 
   componentDidMount = async () => {
@@ -108,16 +113,26 @@ export default class Renderer extends BaseComponent {
     await this.wasmRender(params);
   };
 
-  wasmRender = async (params) => {
+  onInitializeContext = async (e, params) => {
+    await this.reloadWebAssembly();
+    await this.wasmSetup(params);
+  };
+
+  wasmSetup = async (params) => {
     await this.abort();
 
     // Clear the view
     await this.setStateAsync({
       ...this.state,
       running: true,
+      rendering: false,
       completed: false,
-      startTime: Date.now(),
-      endTime: null,
+      initialized: false,
+      initializeStartTime: Date.now(),
+      initializeEndTime: null,
+      renderStartTime: null,
+      renderEndTime: null,
+      aborted: false,
       imageDetails: {
         width: params.width,
         height: params.height,
@@ -173,10 +188,8 @@ export default class Renderer extends BaseComponent {
       WorkerId: 0,
     };
 
-    // Seed each task with rngSeed + taskId
-    let rngSeedBase = params.rngSeed;
-
     this.workers = {};
+    this.taskIdBase = 0;
 
     let workerIds = [...Array(params.workerCount).keys()];
     let setupPromises = [];
@@ -191,6 +204,15 @@ export default class Renderer extends BaseComponent {
     // Wait for initialization
     let workers = await Promise.all(setupPromises);
 
+    for (let worker of workers) {
+      this.workers[worker.workerId] = worker;
+    }
+
+    if (this.state.aborted) {
+      await this.terminateWorkers();
+      return;
+    }
+
     // Build BVH
     let bvhWorker = workers[0];
     let buildBVHPromise = new Promise((resolve) => {
@@ -204,6 +226,11 @@ export default class Renderer extends BaseComponent {
     });
 
     let bvhData = await buildBVHPromise;
+
+    if (this.state.aborted) {
+      await this.terminateWorkers();
+      return;
+    }
 
     // Load BVH to all workers
     let loadBVHPromises = [];
@@ -223,9 +250,60 @@ export default class Renderer extends BaseComponent {
 
     await Promise.all(loadBVHPromises);
 
-    for (let worker of workers) {
-      this.workers[worker.workerId] = worker;
+    if (this.state.aborted) {
+      await this.terminateWorkers();
+      return;
     }
+
+    await this.setStateAsync({
+      ...this.state,
+      initialized: true,
+      initializeEndTime: Date.now(),
+    });
+
+    if (params.renderAfterInitialization) {
+      await this.wasmRender(params);
+    }
+  };
+
+  wasmRender = async (params) => {
+    await this.setStateAsync({
+      ...this.state,
+      imageData: [],
+      running: true,
+      completed: false,
+      renderEndTime: null,
+      rendering: true,
+      renderStartTime: Date.now(),
+      renderKey: this.state.renderKey + 1, // Re-keys the component, forces recreation
+    });
+
+    // Clean any spawn rays, trace or output event data
+    for (let workerId in this.state.renderEventData) {
+      let workerEventData = this.state.renderEventData[workerId];
+
+      for (let taskKey in workerEventData) {
+        if (
+          taskKey.includes("spawnRays") ||
+          taskKey.includes("trace") ||
+          taskKey.includes("output")
+        ) {
+          delete workerEventData[taskKey];
+        }
+      }
+
+      let data = { ...this.state.renderEventData };
+      data[workerId] = workerEventData;
+      await this.setStateAsync({
+        ...this.state,
+        renderEventData: data,
+      });
+    }
+
+    this.renderTasks = [];
+
+    // Seed each task with rngSeed + taskId
+    let rngSeedBase = params.rngSeed;
 
     // Generate render tasks
     let tasksPerDimension = params.taskCount;
@@ -239,7 +317,7 @@ export default class Renderer extends BaseComponent {
     let taskHeight = Math.floor(params.height / tasksPerDimension);
     for (let j = 0; j < tasksPerDimension; j++) {
       for (let i = 0; i < tasksPerDimension; i++) {
-        let taskId = i + j * tasksPerDimension;
+        let taskId = this.taskIdBase + i + j * tasksPerDimension;
         let width = taskWidth;
         let height = taskHeight;
         // Make sure the last column/row renders any remaining pixels
@@ -264,7 +342,13 @@ export default class Renderer extends BaseComponent {
       }
     }
 
-    for (let worker of workers) {
+    this.taskIdBase += tasksPerDimension * tasksPerDimension;
+
+    for (let workerId in this.workers) {
+      let worker = this.workers[workerId];
+      worker.done = false;
+      worker.output = null;
+
       worker.worker.postMessage({
         workerId: worker.workerId,
         type: "askForWork",
@@ -375,8 +459,6 @@ export default class Renderer extends BaseComponent {
         let task = this.renderTasks.pop();
         this.renderWorker(worker, task);
       } else {
-        // No tasks left, terminate
-        worker.worker.terminate();
         worker.done = true;
 
         // If all workers are done, mark no longer running
@@ -389,7 +471,7 @@ export default class Renderer extends BaseComponent {
             ...this.state,
             running: false,
             completed: true,
-            endTime: Date.now(),
+            renderEndTime: Date.now(),
           });
         }
       }
@@ -459,11 +541,15 @@ export default class Renderer extends BaseComponent {
     await this.abort();
   };
 
-  abort = async () => {
-    // Destroy existing workers
+  terminateWorkers = async () => {
     for (let key in this.workers) {
       this.workers[key].worker.terminate();
     }
+  };
+
+  abort = async () => {
+    // Destroy existing workers
+    await this.terminateWorkers();
 
     // Destroy event data
     await this.setStateAsync({
@@ -471,8 +557,17 @@ export default class Renderer extends BaseComponent {
       renderEventData: {},
       imageData: [],
       running: false,
+      rendering: false,
+      initialized: true,
       completed: true,
-      endTime: Date.now(),
+      aborted: true,
+      initializeEndTime: this.state.initialized
+        ? this.state.initializeEndTime
+        : Date.now(),
+      renderStartTime: this.state.initialized
+        ? this.state.renderStartTime
+        : Date.now(),
+      renderEndTime: Date.now(),
     });
 
     // Destroy render tasks
@@ -492,18 +587,32 @@ export default class Renderer extends BaseComponent {
   };
 
   render() {
-    let endTime = this.state.completed ? this.state.endTime : Date.now();
+    let initializeEndTime = this.state.initialized
+      ? this.state.initializeEndTime
+      : Date.now();
+    let renderEndTime = this.state.completed
+      ? this.state.renderEndTime
+      : Date.now();
 
     let totalRays = 0;
     let raysPerSecond = 0;
-    if (this.state.running || this.state.completed) {
+    if (this.state.rendering || this.state.completed) {
       for (let key in this.state.renderEventData) {
         totalRays += this.state.renderEventData[key].rays;
       }
 
-      let totalSeconds = (endTime - this.state.startTime) / 1000.0;
-      raysPerSecond = totalRays / totalSeconds;
+      let renderTotalSeconds =
+        (renderEndTime - this.state.renderStartTime) / 1000.0;
+      raysPerSecond = totalRays / renderTotalSeconds;
     }
+
+    let initializeTime = this.state.initializeStartTime
+      ? initializeEndTime - this.state.initializeStartTime
+      : 0;
+    let renderTime = this.state.renderStartTime
+      ? renderEndTime - this.state.renderStartTime
+      : 0;
+    let totalTime = initializeTime + renderTime;
 
     return (
       <Container>
@@ -512,8 +621,11 @@ export default class Renderer extends BaseComponent {
         </Row>
         <RendererParams
           running={this.state.running}
+          initialized={this.state.initialized}
+          aborted={this.state.aborted}
           onAbort={this.onAbort}
           onStartRender={this.onStartRender}
+          onInitializeContext={this.onInitializeContext}
           onChanged={this.onParamsChanged}
         ></RendererParams>
         <Row>
@@ -541,7 +653,11 @@ export default class Renderer extends BaseComponent {
             </Row>
             {this.state.running || this.state.completed ? (
               <div>
-                <div>Render time {endTime - this.state.startTime} ms</div>
+                <div>Total time {totalTime} ms</div>
+                <div>Initialization time {initializeTime} ms</div>
+                {this.state.initialized && (
+                  <div>Render time {renderTime} ms</div>
+                )}
                 <div>Total rays {(totalRays / 1000000).toFixed(2)}M</div>
                 <div>MRays/s {(raysPerSecond / 1000000).toFixed(2)}</div>
               </div>

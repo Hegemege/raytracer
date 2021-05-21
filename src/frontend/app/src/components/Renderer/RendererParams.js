@@ -8,7 +8,6 @@ export default class RendererParams extends BaseComponent {
     super(props);
     this.state = {
       params: {
-        reloadOnRender: true,
         width: 100,
         height: 100,
         scale: 500,
@@ -34,6 +33,7 @@ export default class RendererParams extends BaseComponent {
         gamma: "2.2",
         useBVH: true,
         maxLeafSize: 6,
+        renderAfterInitialization: true,
       },
     };
   }
@@ -109,8 +109,23 @@ export default class RendererParams extends BaseComponent {
   };
 
   onRenderClicked = async (e) => {
-    e.preventDefault();
     await this.props.onStartRender(e, { ...this.state.params });
+  };
+
+  onInitializeClicked = async (e) => {
+    e.preventDefault();
+
+    if (e.detail === 0) {
+      // Enter key pressed
+      if (this.props.initialized) {
+        await this.props.onStartRender(e, { ...this.state.params });
+      } else {
+        await this.props.onInitializeContext(e, { ...this.state.params });
+      }
+    } else {
+      // Button clicked, force initialization
+      await this.props.onInitializeContext(e, { ...this.state.params });
+    }
   };
 
   getNewSeed = () => {
@@ -121,18 +136,6 @@ export default class RendererParams extends BaseComponent {
     return (
       <Container>
         <Form>
-          <Row>
-            <Form.Group controlId="formCheckboxReloadOnRender">
-              <Form.Check
-                type="checkbox"
-                label="Reload WebAssembly on render"
-                checked={this.state.params.reloadOnRender}
-                onChange={(e) =>
-                  this.handleBoolParamChanged(e, "reloadOnRender")
-                }
-              />
-            </Form.Group>
-          </Row>
           <Row>
             <Form.Group controlId="formWidth" className="form-margin">
               <Form.Label>Width px</Form.Label>
@@ -386,11 +389,31 @@ export default class RendererParams extends BaseComponent {
             </Form.Group>
           </Row>
           <Row>
+            <Form.Group controlId="formCheckboxRenderAfterInitialization">
+              <Form.Check
+                type="checkbox"
+                label="Render after initialization"
+                checked={this.state.params.renderAfterInitialization}
+                onChange={(e) =>
+                  this.handleBoolParamChanged(e, "renderAfterInitialization")
+                }
+              />
+            </Form.Group>
+          </Row>
+          <Row>
             <Button
               variant="primary"
               type="submit"
               className="form-margin"
+              onClick={this.onInitializeClicked}
+            >
+              Initialize
+            </Button>
+            <Button
+              variant="primary"
+              className="form-margin"
               onClick={this.onRenderClicked}
+              disabled={!this.props.initialized || this.props.aborted}
             >
               Render
             </Button>
