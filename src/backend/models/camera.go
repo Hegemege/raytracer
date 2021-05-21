@@ -3,7 +3,6 @@ package models
 import (
 	"math"
 	"math/rand"
-	"raytracer/utility"
 
 	"github.com/go-gl/mathgl/mgl32"
 )
@@ -28,14 +27,13 @@ type Camera struct {
 	// Ortographic projection
 	// Half-height of the projection plane
 	OrtographicSize float32
+
+	projectionPlaneTopLeft mgl32.Vec3
+	horizontalStep         float32
+	verticalStep           float32
 }
 
-func (camera *Camera) SpawnRays(xoffset int, yoffset int, taskWidth int, taskHeight int, totalWidth int, totalHeight int, taskID int) []*Ray {
-	utility.ProgressUpdate(0.0, "spawnRays", taskID, 0)
-
-	rayCount := taskHeight * taskWidth * camera.RaysPerPixel
-	rays := make([]*Ray, rayCount)
-
+func (camera *Camera) Initialize(totalWidth int, totalHeight int) {
 	var projectionPlaneTopLeft mgl32.Vec3
 	var projectionPlaneBottomRight mgl32.Vec3
 
@@ -64,51 +62,33 @@ func (camera *Camera) SpawnRays(xoffset int, yoffset int, taskWidth int, taskHei
 		projectionPlaneBottomRight = mgl32.Vec3{ortographicHalfWidth, -camera.OrtographicSize, camera.ProjectionPlaneDistance}
 	}
 
-	verticalStep := (projectionPlaneTopLeft.Y() - projectionPlaneBottomRight.Y()) / float32(totalHeight)
-	horizontalStep := (projectionPlaneBottomRight.X() - projectionPlaneTopLeft.X()) / float32(totalWidth)
+	camera.verticalStep = (projectionPlaneTopLeft.Y() - projectionPlaneBottomRight.Y()) / float32(totalHeight)
+	camera.horizontalStep = (projectionPlaneBottomRight.X() - projectionPlaneTopLeft.X()) / float32(totalWidth)
+	camera.projectionPlaneTopLeft = projectionPlaneTopLeft
+}
 
-	ri := 0
-	reportedIndex := 0
-	reportingInterval := int(float32(rayCount) / 10.0)
-	for j := yoffset; j < yoffset+taskHeight; j++ {
-		for i := xoffset; i < xoffset+taskWidth; i++ {
-			for rpp := 0; rpp < camera.RaysPerPixel; rpp++ {
+func (camera *Camera) GetCameraRay(xoffset int, yoffset int, x int, y int) *Ray {
 
-				if ri > reportedIndex+reportingInterval {
-					reportedIndex = ri
-					progress := float32(reportedIndex) / float32(rayCount)
-					utility.ProgressUpdate(progress, "spawnRays", taskID, 0)
-				}
+	var dir mgl32.Vec3
 
-				var originCameraSpace mgl32.Vec3
-				var dir mgl32.Vec3
+	rx := rand.Float32()*0.5 - 1
+	ry := rand.Float32()*0.5 - 1
 
-				rx := rand.Float32()*0.5 - 1
-				ry := rand.Float32()*0.5 - 1
+	lx := camera.projectionPlaneTopLeft.X() + camera.horizontalStep*(float32(xoffset+x)+rx)
+	ly := camera.projectionPlaneTopLeft.Y() - camera.verticalStep*(float32(yoffset+y)+ry)
 
-				x := projectionPlaneTopLeft.X() + horizontalStep*(float32(i)+rx)
-				y := projectionPlaneTopLeft.Y() - verticalStep*(float32(j)+ry)
+	originCameraSpace := mgl32.Vec3{lx, ly, -camera.ProjectionPlaneDistance}
+	origin := mgl32.TransformCoordinate(originCameraSpace, camera.Transform)
 
-				originCameraSpace = mgl32.Vec3{x, y, -camera.ProjectionPlaneDistance}
-				origin := mgl32.TransformCoordinate(originCameraSpace, camera.Transform)
-
-				if camera.Projection == Perspective {
-					// Camera local origin is always at 0,0,0 so the normalized
-					// ray origin is it's direction
-					dir = origin.Sub(camera.Transform.Col(3).Vec3()).Normalize()
-				} else {
-					dir = mgl32.TransformCoordinate(mgl32.Vec3{0, 0, -1}, camera.Transform).Sub(camera.Transform.Col(3).Vec3()).Normalize()
-				}
-
-				ray := NewRay(origin, dir, 0, i-xoffset, j-yoffset)
-
-				rays[ri] = ray
-				ri++
-			}
-		}
+	if camera.Projection == Perspective {
+		// Camera local origin is always at 0,0,0 so the normalized
+		// ray origin is it's direction
+		dir = origin.Sub(camera.Transform.Col(3).Vec3()).Normalize()
+	} else {
+		dir = mgl32.TransformCoordinate(mgl32.Vec3{0, 0, -1}, camera.Transform).Sub(camera.Transform.Col(3).Vec3()).Normalize()
 	}
 
-	utility.ProgressUpdate(1.0, "spawnRays", taskID, 0)
+	ray := NewRay(origin, dir, 0, x-xoffset, y-yoffset)
 
-	return rays
+	return ray
 }

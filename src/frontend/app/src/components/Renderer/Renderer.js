@@ -133,11 +133,6 @@ export default class Renderer extends BaseComponent {
       renderStartTime: null,
       renderEndTime: null,
       aborted: false,
-      imageDetails: {
-        width: params.width,
-        height: params.height,
-        scale: params.scale,
-      },
       renderKey: this.state.renderKey + 1, // Re-keys the component, forces recreation
     });
 
@@ -145,38 +140,10 @@ export default class Renderer extends BaseComponent {
       await this.reloadWebAssembly();
     }
 
-    let x = parseFloat(params.x);
-    let y = parseFloat(params.y);
-    let z = parseFloat(params.z);
-    let rx = (parseFloat(params.rx) * Math.PI) / 180.0;
-    let ry = (parseFloat(params.ry) * Math.PI) / 180.0;
-    let rz = (parseFloat(params.rz) * Math.PI) / 180.0;
-    let cameraTransform = translate(x, y, z);
-    cameraTransform = multiplyMatrices(cameraTransform, rotateAroundXAxis(rx));
-    cameraTransform = multiplyMatrices(cameraTransform, rotateAroundYAxis(ry));
-    cameraTransform = multiplyMatrices(cameraTransform, rotateAroundZAxis(rz));
-
     let initializeParams = {
-      Width: params.width,
-      Height: params.height,
-      Camera: {
-        Transform: cameraTransform,
-        ProjectionPlaneDistance: 0.01,
-        RaysPerPixel: params.raysPerPixel,
-        Projection: params.projection,
-        OrtographicSize: params.ortographicSize,
-        FieldOfView: params.fieldOfView,
-      },
-      Settings: {
-        DrawSurfaceNormal: true,
-        Debug: false,
-        GammaCorrection: params.gammaCorrection,
-        Gamma: parseFloat(params.gamma),
-        UseBVH: params.useBVH,
-        BVHMaxLeafSize: params.maxLeafSize,
-      },
-      BounceLimit: params.bounces,
-      BounceRays: params.bounceRays,
+      Debug: false,
+      UseBVH: params.useBVH,
+      BVHMaxLeafSize: params.maxLeafSize,
       Scene: {}, //this.state.sceneData,
       ObjBuffer: this.state.objData,
       MtlBuffer: this.state.mtlData,
@@ -275,6 +242,11 @@ export default class Renderer extends BaseComponent {
       renderEndTime: null,
       rendering: true,
       renderStartTime: Date.now(),
+      imageDetails: {
+        width: params.width,
+        height: params.height,
+        scale: params.scale,
+      },
       renderKey: this.state.renderKey + 1, // Re-keys the component, forces recreation
     });
 
@@ -311,6 +283,17 @@ export default class Renderer extends BaseComponent {
     tasksPerDimension = Math.trunc(Math.sqrt(tasksPerDimension));
     tasksPerDimension = Math.max(1, tasksPerDimension);
 
+    let x = parseFloat(params.x);
+    let y = parseFloat(params.y);
+    let z = parseFloat(params.z);
+    let rx = (parseFloat(params.rx) * Math.PI) / 180.0;
+    let ry = (parseFloat(params.ry) * Math.PI) / 180.0;
+    let rz = (parseFloat(params.rz) * Math.PI) / 180.0;
+    let cameraTransform = translate(x, y, z);
+    cameraTransform = multiplyMatrices(cameraTransform, rotateAroundXAxis(rx));
+    cameraTransform = multiplyMatrices(cameraTransform, rotateAroundYAxis(ry));
+    cameraTransform = multiplyMatrices(cameraTransform, rotateAroundZAxis(rz));
+
     // Generate tasks of roughly equal size. Last row/column can
     // be a few pixels larger to accommodate any resolution
     let taskWidth = Math.floor(params.width / tasksPerDimension);
@@ -330,12 +313,29 @@ export default class Renderer extends BaseComponent {
             taskHeight + (params.height - tasksPerDimension * taskHeight);
         }
         let task = {
+          Camera: {
+            Transform: cameraTransform,
+            ProjectionPlaneDistance: 0.01,
+            RaysPerPixel: params.raysPerPixel,
+            Projection: params.projection,
+            OrtographicSize: params.ortographicSize,
+            FieldOfView: params.fieldOfView,
+          },
+          TotalWidth: params.width,
+          TotalHeight: params.height,
           TaskID: taskId,
           Width: width,
           Height: height,
           XOffset: i * taskWidth,
           YOffset: j * taskHeight,
           RNGSeed: rngSeedBase + taskId,
+          Settings: {
+            DrawSurfaceNormal: true,
+            GammaCorrection: params.gammaCorrection,
+            Gamma: parseFloat(params.gamma),
+            BounceLimit: params.bounces,
+            BounceRays: params.bounceRays,
+          },
         };
 
         this.renderTasks.push(task);

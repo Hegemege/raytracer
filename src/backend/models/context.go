@@ -8,11 +8,8 @@ import (
 )
 
 type RenderContext struct {
-	Width         int
-	Height        int
-	Camera        Camera
+	Debug         bool
 	Scene         Scene
-	Settings      RenderSettings
 	ObjBuffer     string
 	MtlBuffer     string
 	RawTextures   []Texture
@@ -21,9 +18,10 @@ type RenderContext struct {
 	DebugMaterial *gwob.Material
 	Triangles     []*Triangle
 	Light         *AreaLight
-	BounceLimit   uint8
-	BounceRays    int
 	WorkerID      int
+
+	UseBVH         bool
+	BVHMaxLeafSize int
 
 	BVH *BVH
 
@@ -34,33 +32,27 @@ type RenderContext struct {
 }
 
 type RenderPass struct {
-	TaskID  int
-	RNGSeed int64
-	XOffset int
-	YOffset int
-	Width   int
-	Height  int
+	Camera      Camera
+	TotalWidth  int
+	TotalHeight int
+	TaskID      int
+	RNGSeed     int64
+	XOffset     int
+	YOffset     int
+	Width       int
+	Height      int
+	Settings    RenderSettings
 }
 
 func (context *RenderContext) Initialize(rawTextureData []*[]byte) error {
-	if math.Abs(float64(context.Camera.Transform.Trace())) < 0.001 {
-		context.Camera.Transform = mgl32.Ident4()
-	}
 
 	// Reset stats (if somehow set by client)
 	context.Rays = 0
 
-	if context.Width < 0 {
-		context.Width = 0
-	}
-	if context.Height < 0 {
-		context.Height = 0
-	}
-
 	context.Scene.LinkMaterials()
 	if len(context.ObjBuffer) > 0 && len(context.MtlBuffer) > 0 {
-		optionsLogger := &gwob.ObjParserOptions{LogStats: context.Settings.Debug, Logger: func(msg string) { println(msg) }}
-		//options := &gwob.ObjParserOptions{LogStats: context.Settings.Debug, Logger: nil}
+		optionsLogger := &gwob.ObjParserOptions{LogStats: context.Debug, Logger: func(msg string) { println(msg) }}
+		//options := &gwob.ObjParserOptions{LogStats: context.Debug, Logger: nil}
 
 		obj, err := gwob.NewObjFromBuf("scene", []byte(context.ObjBuffer), optionsLogger)
 		if err != nil {
@@ -183,13 +175,7 @@ func (context *RenderContext) Initialize(rawTextureData []*[]byte) error {
 
 			context.Light = light
 		} else {
-			// Create debug light
-			transform := context.Camera.Transform
-			normal := mgl32.TransformCoordinate(mgl32.Vec3{0, 0, 1}, transform).Sub(transform.Col(3).Vec3())
-			size := mgl32.Vec2{1.0, 1.0}
-			emission := mgl32.Vec3{100, 100, 100}
-			light := NewAreaLight(transform, size, emission, normal)
-			context.Light = light
+			// Render pass Initialize creates a debug light at the camera position
 		}
 	}
 
@@ -203,4 +189,27 @@ func (context *RenderContext) BuildBVH() *BVH {
 func (context *RenderContext) LoadBVH(bvh *BVH) {
 	context.BVH = bvh
 	context.BVH.Load(context.Triangles)
+}
+
+func (pass *RenderPass) Initialize(context *RenderContext) {
+	if pass.TotalWidth < 0 {
+		pass.TotalWidth = 0
+	}
+	if pass.TotalHeight < 0 {
+		pass.TotalHeight = 0
+	}
+
+	if math.Abs(float64(pass.Camera.Transform.Trace())) < 0.001 {
+		pass.Camera.Transform = mgl32.Ident4()
+	}
+
+	if context.Light == nil {
+		// Create debug light
+		transform := pass.Camera.Transform
+		normal := mgl32.TransformCoordinate(mgl32.Vec3{0, 0, 1}, transform).Sub(transform.Col(3).Vec3())
+		size := mgl32.Vec2{1.0, 1.0}
+		emission := mgl32.Vec3{100, 100, 100}
+		light := NewAreaLight(transform, size, emission, normal)
+		context.Light = light
+	}
 }

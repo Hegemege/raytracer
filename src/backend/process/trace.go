@@ -17,7 +17,7 @@ type RaycastResult struct {
 }
 
 // Path traces a given pixel ray
-func Trace(context *models.RenderContext, ray *models.Ray) mgl32.Vec3 {
+func Trace(context *models.RenderContext, pass *models.RenderPass, ray *models.Ray) mgl32.Vec3 {
 	// If out of scene, return background color
 	// "Ambient color"
 	r := float32(0.0)
@@ -74,7 +74,7 @@ func Trace(context *models.RenderContext, ray *models.Ray) mgl32.Vec3 {
 
 		shadingTerms = append(shadingTerms, shading)
 
-		if indirectCounter >= int(context.BounceLimit) {
+		if indirectCounter >= int(pass.Settings.BounceLimit) {
 			brdfTerms = append(brdfTerms, mgl32.Vec3{0, 0, 0})
 			break
 		}

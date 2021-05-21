@@ -83,7 +83,7 @@ func loadBVH(this js.Value, args []js.Value) interface{} {
 
 // Renders a region given by the parameters
 func render(this js.Value, args []js.Value) interface{} {
-	if context.Settings.Debug {
+	if context.Debug {
 		println("Go WebAssembly render call")
 	}
 
@@ -95,16 +95,20 @@ func render(this js.Value, args []js.Value) interface{} {
 	}
 
 	context.Rays = 0
+	pass.Camera.Initialize(pass.TotalWidth, pass.TotalHeight)
 
 	// Fill with black
 	result.ImageData = image.NewRGBA(image.Rect(0, 0, pass.Width, pass.Height))
 	draw.Draw(result.ImageData, result.ImageData.Bounds(), &image.Uniform{color.Black}, image.Point{}, draw.Src)
 
 	// Spawn initial rays
-	rays := context.Camera.SpawnRays(pass.XOffset, pass.YOffset, pass.Width, pass.Height, context.Width, context.Height, pass.TaskID)
+	//rays := pass.Camera.SpawnRays(pass.XOffset, pass.YOffset, pass.Width, pass.Height, context.Width, context.Height, pass.TaskID)
+
+	pixelCount := pass.Width * pass.Height
+	rayCount := pixelCount * pass.Camera.RaysPerPixel
 
 	utility.ProgressUpdate(0.0, "trace", pass.TaskID, context.Rays)
-	updateInterval := int(float32(len(rays)) / 10.0)
+	updateInterval := int(float32(rayCount) / 10.0)
 	updateIndex := 0
 
 	colors := make([]mgl32.Vec3, pass.Width*pass.Height)
@@ -115,15 +119,26 @@ func render(this js.Value, args []js.Value) interface{} {
 	}
 
 	// Trace
-	for i, ray := range rays {
-		if i > updateIndex+updateInterval {
-			updateIndex = i
-			progress := float32(updateIndex) / float32(len(rays))
-			utility.ProgressUpdate(progress, "trace", pass.TaskID, context.Rays)
-		}
-		rayColor := process.Trace(context, ray)
+	ri := 0
+	for i := 0; i < pixelCount; i++ {
+		x := i % pass.Width
+		y := i / pass.Width
+		pixelColor := mgl32.Vec3{0, 0, 0}
+		for j := 0; j < pass.Camera.RaysPerPixel; j++ {
+			if ri > updateIndex+updateInterval {
+				updateIndex = ri
+				progress := float32(updateIndex) / float32(rayCount)
+				utility.ProgressUpdate(progress, "trace", pass.TaskID, context.Rays)
+			}
+			ri += 1
 
-		colors[ray.X+ray.Y*pass.Width] = colors[ray.X+ray.Y*pass.Width].Add(rayColor)
+			ray := pass.Camera.GetCameraRay(pass.XOffset, pass.YOffset, x, y)
+
+			rayColor := process.Trace(context, pass, ray)
+			pixelColor = pixelColor.Add(rayColor)
+
+		}
+		colors[i] = pixelColor
 	}
 
 	utility.ProgressUpdate(1.0, "trace", pass.TaskID, context.Rays)
@@ -133,11 +148,11 @@ func render(this js.Value, args []js.Value) interface{} {
 	for j := 0; j < pass.Height; j++ {
 		for i := 0; i < pass.Width; i++ {
 			c := colors[i+j*pass.Width]
-			c = c.Mul(1.0 / float32(context.Camera.RaysPerPixel))
+			c = c.Mul(1.0 / float32(pass.Camera.RaysPerPixel))
 
 			// Gamma correction
-			if context.Settings.GammaCorrection {
-				gamma := float64(1.0 / context.Settings.Gamma)
+			if pass.Settings.GammaCorrection {
+				gamma := float64(1.0 / pass.Settings.Gamma)
 				c = mgl32.Vec3{
 					float32(math.Pow(float64(c.X()), gamma)),
 					float32(math.Pow(float64(c.Y()), gamma)),

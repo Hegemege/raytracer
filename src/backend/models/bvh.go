@@ -73,7 +73,7 @@ func buildBVHNode(context *RenderContext, triangles []*Triangle, startIndex int,
 	triCount := endIndex - startIndex + 1
 
 	// Split if there are too many child triangles
-	if triCount > context.Settings.BVHMaxLeafSize && context.Settings.UseBVH {
+	if triCount > context.BVHMaxLeafSize && context.UseBVH {
 		splitPlane := GetSplitPlaneSAH(triangles, node)
 		splitPlaneVec3 := splitPlane.Vec3()
 
