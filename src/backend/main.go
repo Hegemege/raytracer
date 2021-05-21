@@ -95,6 +95,8 @@ func render(this js.Value, args []js.Value) interface{} {
 		return handleError(err, &result)
 	}
 
+	pass.Initialize(context)
+
 	if activeRenderKey != pass.RenderKey {
 		activeRenderKey = pass.RenderKey
 		context.Rays = 0

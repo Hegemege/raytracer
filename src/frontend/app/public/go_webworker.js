@@ -89,8 +89,7 @@ function progressUpdate(params) {
       log(workerId, "Loading BVH");
       let loadBVHStartTime = Date.now();
 
-      let bvhDataRaw = JSON.stringify(e.data.bvhData);
-      loadBVHFunc(bvhDataRaw);
+      loadBVHFunc(e.data.bvhData);
 
       log(workerId, "Loading BVH complete!");
       log(workerId, "Took", Date.now() - loadBVHStartTime, "ms");

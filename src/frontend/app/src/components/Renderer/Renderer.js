@@ -193,7 +193,7 @@ export default class Renderer extends BaseComponent {
       this.buildBVHWorker(bvhWorker);
     });
 
-    let bvhData = await buildBVHPromise;
+    let bvhData = JSON.stringify(await buildBVHPromise);
 
     if (this.state.aborted) {
       await this.terminateWorkers();
@@ -368,6 +368,8 @@ export default class Renderer extends BaseComponent {
       initialized: false,
     };
 
+    let rawParams = JSON.stringify(initializeParams);
+
     return new Promise((resolve) => {
       worker.worker.addEventListener("message", async (event) => {
         this.workerLogger(event);
@@ -388,7 +390,7 @@ export default class Renderer extends BaseComponent {
         }
       });
 
-      this.initializeWorker(worker, initializeParams);
+      this.initializeWorker(worker, rawParams);
     });
   };
 
@@ -495,7 +497,7 @@ export default class Renderer extends BaseComponent {
         workerId: worker.workerId,
         module: this.moduleData,
         type: "initialize",
-        initializeParams: JSON.stringify(params),
+        initializeParams: params,
         textureData: textureData,
       },
       textureData

@@ -29,6 +29,8 @@ type RenderContext struct {
 	Rays uint64
 
 	TextureLookup map[string]*Texture
+
+	useDebugLight bool
 }
 
 type RenderPass struct {
@@ -177,6 +179,7 @@ func (context *RenderContext) Initialize(rawTextureData []*[]byte) error {
 			context.Light = light
 		} else {
 			// Render pass Initialize creates a debug light at the camera position
+			context.useDebugLight = true
 		}
 	}
 
@@ -204,7 +207,7 @@ func (pass *RenderPass) Initialize(context *RenderContext) {
 		pass.Camera.Transform = mgl32.Ident4()
 	}
 
-	if context.Light == nil {
+	if context.useDebugLight {
 		// Create debug light
 		transform := pass.Camera.Transform
 		normal := mgl32.TransformCoordinate(mgl32.Vec3{0, 0, 1}, transform).Sub(transform.Col(3).Vec3())
