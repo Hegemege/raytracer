@@ -39,6 +39,7 @@ export default class Renderer extends BaseComponent {
       mtlData: "",
       renderEventData: {},
       renderTasks: [],
+      renderParams: null,
     };
     this.textureData = [];
     this.renderTasks = [];
@@ -324,6 +325,7 @@ export default class Renderer extends BaseComponent {
           TotalWidth: params.width,
           TotalHeight: params.height,
           TaskID: taskId,
+          RenderKey: this.state.renderKey,
           Width: width,
           Height: height,
           XOffset: i * taskWidth,
@@ -334,7 +336,7 @@ export default class Renderer extends BaseComponent {
             GammaCorrection: params.gammaCorrection,
             Gamma: parseFloat(params.gamma),
             BounceLimit: params.bounces,
-            BounceRays: params.bounceRays,
+            LightSampleRays: params.lightSampleRays,
           },
         };
 
@@ -574,7 +576,12 @@ export default class Renderer extends BaseComponent {
     this.renderTasks = [];
   };
 
-  onParamsChanged = async () => {};
+  onParamsChanged = async (params) => {
+    await this.setStateAsync({
+      ...this.state,
+      renderParams: params,
+    });
+  };
 
   arrayBufferToBase64 = (buffer) => {
     var binary = "";
@@ -613,6 +620,24 @@ export default class Renderer extends BaseComponent {
       ? renderEndTime - this.state.renderStartTime
       : 0;
     let totalTime = initializeTime + renderTime;
+
+    let estimatedRays = 0;
+    let estimatedTimeRemaining = 0;
+    if (this.state.renderParams) {
+      estimatedRays =
+        this.state.renderParams.width *
+        this.state.renderParams.height *
+        this.state.renderParams.raysPerPixel *
+        (1 +
+          this.state.renderParams.lightSampleRays +
+          this.state.renderParams.lightSampleRays *
+            this.state.renderParams.bounces);
+
+      if (this.state.running) {
+        let remainingRays = estimatedRays - totalRays;
+        estimatedTimeRemaining = remainingRays / raysPerSecond;
+      }
+    }
 
     return (
       <Container>
@@ -660,8 +685,14 @@ export default class Renderer extends BaseComponent {
                 )}
                 <div>Total rays {(totalRays / 1000000).toFixed(2)}M</div>
                 <div>MRays/s {(raysPerSecond / 1000000).toFixed(2)}</div>
+                <div>
+                  Est. time remaining {estimatedTimeRemaining.toFixed(2)} s
+                </div>
               </div>
             ) : null}
+            <div>
+              <div>Est. MRays {(estimatedRays / 1000000).toFixed(2)}</div>
+            </div>
           </Col>
           <Col>
             {Object.keys(this.state.renderEventData).map((workerId, i) => (

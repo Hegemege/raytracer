@@ -2,9 +2,11 @@ package models
 
 import (
 	"math"
-	"math/rand"
 
 	"github.com/go-gl/mathgl/mgl32"
+	"gonum.org/v1/gonum/mat"
+	"gonum.org/v1/gonum/stat/distmv"
+	"gonum.org/v1/gonum/stat/samplemv"
 )
 
 type ProjectionType int
@@ -31,9 +33,24 @@ type Camera struct {
 	projectionPlaneTopLeft mgl32.Vec3
 	horizontalStep         float32
 	verticalStep           float32
+
+	sampler    *samplemv.Halton
+	batch      *mat.Dense
+	index      int
+	maxSamples int
 }
 
 func (camera *Camera) Initialize(totalWidth int, totalHeight int) {
+	// Create sampler
+	camera.maxSamples = 12345
+	camera.batch = mat.NewDense(camera.maxSamples, 2, nil)
+	camera.sampler = &samplemv.Halton{
+		Kind: samplemv.Owen,
+		Q:    distmv.NewUnitUniform(2, nil),
+	}
+
+	camera.sampler.Sample(camera.batch)
+
 	var projectionPlaneTopLeft mgl32.Vec3
 	var projectionPlaneBottomRight mgl32.Vec3
 
@@ -67,15 +84,33 @@ func (camera *Camera) Initialize(totalWidth int, totalHeight int) {
 	camera.projectionPlaneTopLeft = projectionPlaneTopLeft
 }
 
+func (camera *Camera) samplePixel() mgl32.Vec2 {
+	// Get Halton sample
+	sample := mgl32.Vec2{
+		float32(camera.batch.At(camera.index, 0)),
+		float32(camera.batch.At(camera.index, 1)),
+	}
+
+	camera.index = (camera.index + 1) % camera.maxSamples
+
+	return sample
+}
+
 func (camera *Camera) GetCameraRay(xoffset int, yoffset int, x int, y int) *Ray {
 
 	var dir mgl32.Vec3
 
-	rx := rand.Float32()*0.5 - 1
-	ry := rand.Float32()*0.5 - 1
+	/*
+		rx := rand.Float32()*0.5 - 1
+		ry := rand.Float32()*0.5 - 1
 
-	lx := camera.projectionPlaneTopLeft.X() + camera.horizontalStep*(float32(xoffset+x)+rx)
-	ly := camera.projectionPlaneTopLeft.Y() - camera.verticalStep*(float32(yoffset+y)+ry)
+		lx := camera.projectionPlaneTopLeft.X() + camera.horizontalStep*(float32(xoffset+x)+rx)
+		ly := camera.projectionPlaneTopLeft.Y() - camera.verticalStep*(float32(yoffset+y)+ry)
+	*/
+
+	sample := camera.samplePixel()
+	lx := camera.projectionPlaneTopLeft.X() + camera.horizontalStep*(float32(xoffset+x)+sample.X())
+	ly := camera.projectionPlaneTopLeft.Y() - camera.verticalStep*(float32(yoffset+y)+sample.Y())
 
 	originCameraSpace := mgl32.Vec3{lx, ly, -camera.ProjectionPlaneDistance}
 	origin := mgl32.TransformCoordinate(originCameraSpace, camera.Transform)

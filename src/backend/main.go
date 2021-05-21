@@ -17,6 +17,7 @@ import (
 
 // Globals kept by the same WebWorker for multiple calls
 var context *models.RenderContext
+var activeRenderKey int = -1
 
 func main() {
 	println("Go WebAssembly main")
@@ -94,15 +95,15 @@ func render(this js.Value, args []js.Value) interface{} {
 		return handleError(err, &result)
 	}
 
-	context.Rays = 0
+	if activeRenderKey != pass.RenderKey {
+		activeRenderKey = pass.RenderKey
+		context.Rays = 0
+	}
 	pass.Camera.Initialize(pass.TotalWidth, pass.TotalHeight)
 
 	// Fill with black
 	result.ImageData = image.NewRGBA(image.Rect(0, 0, pass.Width, pass.Height))
 	draw.Draw(result.ImageData, result.ImageData.Bounds(), &image.Uniform{color.Black}, image.Point{}, draw.Src)
-
-	// Spawn initial rays
-	//rays := pass.Camera.SpawnRays(pass.XOffset, pass.YOffset, pass.Width, pass.Height, context.Width, context.Height, pass.TaskID)
 
 	pixelCount := pass.Width * pass.Height
 	rayCount := pixelCount * pass.Camera.RaysPerPixel

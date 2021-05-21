@@ -42,6 +42,7 @@ type RenderPass struct {
 	Width       int
 	Height      int
 	Settings    RenderSettings
+	RenderKey   int
 }
 
 func (context *RenderContext) Initialize(rawTextureData []*[]byte) error {

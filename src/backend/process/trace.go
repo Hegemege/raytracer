@@ -29,7 +29,7 @@ func Trace(context *models.RenderContext, pass *models.RenderPass, ray *models.R
 		b / 255.0,
 	}
 
-	result := rayCast(context, ray)
+	result := rayCast(context, ray, math.MaxFloat32)
 
 	shadingTerms := make([]mgl32.Vec3, 0)
 	brdfTerms := make([]mgl32.Vec3, 0)
@@ -46,18 +46,23 @@ func Trace(context *models.RenderContext, pass *models.RenderPass, ray *models.R
 		shading := mgl32.Vec3{0, 0, 0}
 		diffuse, normal, _ := getMaterialParameters(context, result)
 
-		lightSampleN := 25
-		for i := 0; i < lightSampleN; i++ {
+		for i := 0; i < pass.Settings.LightSampleRays; i++ {
 			lightSample, pdf := context.Light.Sample()
 
 			shadowRay := lightSample.Sub(result.Point)
+			lightDistance := shadowRay.Len()
 			shadowRayN := shadowRay.Normalize()
 			lightIncident := shadowRayN.Dot(context.Light.Normal)
 			if lightIncident < 0 {
 				sRay := models.NewRay(result.Point, shadowRayN, ray.Bounce, ray.X, ray.Y)
-				shadowResult := rayCast(context, sRay)
+				shadowResult := rayCast(context, sRay, lightDistance)
 
-				if shadowResult != nil && shadowResult.Triangle.Material.Name == "Light" {
+				// Shadowresult is always defined, since initialTMin is given
+				// Triangle of the result may not be defined
+
+				// If the raycast didn't hit anything or didn't hit anything closer to the light
+				lightHit := shadowResult.T >= lightDistance || (shadowResult.Triangle != nil && shadowResult.Triangle.IsLight)
+				if lightHit {
 					theta_l := float32(math.Max(float64(-lightIncident), 0.0))
 					theta := float32(math.Max(float64(shadowRayN.Dot(result.Triangle.Normal)), 0.0))
 					radius2 := shadowRay.LenSqr()
@@ -67,10 +72,11 @@ func Trace(context *models.RenderContext, pass *models.RenderPass, ray *models.R
 
 					shading = shading.Add(color)
 				}
+
 			}
 		}
 
-		shading = shading.Mul(1 / float32(lightSampleN))
+		shading = shading.Mul(1 / float32(pass.Settings.LightSampleRays))
 
 		shadingTerms = append(shadingTerms, shading)
 
@@ -85,7 +91,7 @@ func Trace(context *models.RenderContext, pass *models.RenderPass, ray *models.R
 		bounceRay := models.NewRay(result.Point, sample, ray.Bounce+1, ray.X, ray.Y)
 
 		// New bounce
-		result = rayCast(context, bounceRay)
+		result = rayCast(context, bounceRay, math.MaxFloat32)
 		indirectCounter++
 
 		brdfTheta := currentDir.Dot(sample) * -1
@@ -114,11 +120,11 @@ func Trace(context *models.RenderContext, pass *models.RenderPass, ray *models.R
 	return c
 }
 
-func rayCast(context *models.RenderContext, ray *models.Ray) *RaycastResult {
+func rayCast(context *models.RenderContext, ray *models.Ray, initialTmin float32) *RaycastResult {
 	context.Rays += 1
 
 	// Distance to hit, can be used to create a depth map too
-	var tmin float32 = math.MaxFloat32
+	var tmin float32 = initialTmin
 	var umin float32 = 0.0
 	var vmin float32 = 0.0
 	var tri *models.Triangle // Triangle index

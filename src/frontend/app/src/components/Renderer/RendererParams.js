@@ -21,7 +21,7 @@ export default class RendererParams extends BaseComponent {
         fieldOfView: 45,
         ortographicSize: 3,
         bounces: 10,
-        bounceRays: 1,
+        lightSampleRays: 4,
         raysPerPixel: 10,
         sceneData: null,
         objData: "",
@@ -40,6 +40,7 @@ export default class RendererParams extends BaseComponent {
 
   componentDidMount = async () => {
     // TODO: Save/load config from localstorage/json
+    this.onParamsChanged();
   };
 
   onParamsChanged = async () => {
@@ -236,14 +237,16 @@ export default class RendererParams extends BaseComponent {
               />
             </Form.Group>
 
-            <Form.Group controlId="formBounceRays" className="form-margin">
-              <Form.Label>Bounce Rays</Form.Label>
+            <Form.Group controlId="formLightSampleRays" className="form-margin">
+              <Form.Label>Light Sample Rays</Form.Label>
               <Form.Control
                 htmlSize="6"
                 type="text"
-                label="Bounce Rays"
-                value={this.state.params.bounceRays}
-                onChange={(e) => this.handleIntParamChanged(e, "bounceRays")}
+                label="Light Sample Rays"
+                value={this.state.params.lightSampleRays}
+                onChange={(e) =>
+                  this.handleIntParamChanged(e, "lightSampleRays")
+                }
               />
             </Form.Group>
           </Row>

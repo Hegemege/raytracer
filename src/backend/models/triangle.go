@@ -29,6 +29,8 @@ type Triangle struct {
 	Center mgl32.Vec3
 	Min    mgl32.Vec3
 	Max    mgl32.Vec3
+
+	IsLight bool
 }
 
 func NewTriangle(v0 mgl32.Vec3, v1 mgl32.Vec3, v2 mgl32.Vec3, material *gwob.Material, index int) *Triangle {
@@ -47,6 +49,7 @@ func NewTriangle(v0 mgl32.Vec3, v1 mgl32.Vec3, v2 mgl32.Vec3, material *gwob.Mat
 		Center:   v0.Add(v1).Add(v2).Mul(1.0 / 3.0),
 		Min:      utility.Vec3Min(utility.Vec3Min(v0, v1), v2),
 		Max:      utility.Vec3Max(utility.Vec3Max(v0, v1), v2),
+		IsLight:  material.Name == "Light",
 		//LocalM:   mgl32.Mat3FromCols(v1.Sub(v0), v2.Sub(v0), normal).Inv(),
 	}
 

@@ -4,6 +4,6 @@ type RenderSettings struct {
 	DrawSurfaceNormal bool
 	GammaCorrection   bool
 	Gamma             float32
-	BounceRays        int
+	LightSampleRays   int
 	BounceLimit       uint8
 }
