@@ -34,6 +34,8 @@ export default class RendererParams extends BaseComponent {
         useBVH: true,
         maxLeafSize: 6,
         renderAfterInitialization: true,
+        lightIntensity: 100,
+        debugLightSize: 1.0,
       },
     };
   }
@@ -310,6 +312,32 @@ export default class RendererParams extends BaseComponent {
                 label="Scale"
                 value={this.state.params.rz}
                 onChange={(e) => this.handleFloatParamChanged(e, "rz")}
+              />
+            </Form.Group>
+
+            <Form.Group controlId="formLightIntensity" className="form-margin">
+              <Form.Label>Light Intensity</Form.Label>
+              <Form.Control
+                htmlSize="6"
+                type="text"
+                label="Light Intensity"
+                value={this.state.params.lightIntensity}
+                onChange={(e) =>
+                  this.handleFloatParamChanged(e, "lightIntensity")
+                }
+              />
+            </Form.Group>
+
+            <Form.Group controlId="formDebugLightSize" className="form-margin">
+              <Form.Label>Debug Light Size</Form.Label>
+              <Form.Control
+                htmlSize="6"
+                type="text"
+                label="Debug Light Size"
+                value={this.state.params.debugLightSize}
+                onChange={(e) =>
+                  this.handleFloatParamChanged(e, "debugLightSize")
+                }
               />
             </Form.Group>
           </Row>

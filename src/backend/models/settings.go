@@ -6,4 +6,6 @@ type RenderSettings struct {
 	Gamma             float32
 	LightSampleRays   int
 	BounceLimit       uint8
+	LightIntensity    float32
+	DebugLightSize    float32
 }

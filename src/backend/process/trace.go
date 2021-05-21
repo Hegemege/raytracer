@@ -68,8 +68,6 @@ func Trace(context *models.RenderContext, pass *models.RenderPass, ray *models.R
 					radius2 := shadowRay.LenSqr()
 
 					color := utility.MultiplyColor(diffuse, context.Light.Emission).Mul(theta_l * theta / (radius2 * pdf * math.Pi))
-					color = utility.ClampColor(color)
-
 					shading = shading.Add(color)
 				}
 
@@ -77,6 +75,7 @@ func Trace(context *models.RenderContext, pass *models.RenderPass, ray *models.R
 		}
 
 		shading = shading.Mul(1 / float32(pass.Settings.LightSampleRays))
+		shading = utility.ClampColor(shading)
 
 		shadingTerms = append(shadingTerms, shading)
 

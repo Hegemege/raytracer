@@ -337,6 +337,8 @@ export default class Renderer extends BaseComponent {
             Gamma: parseFloat(params.gamma),
             BounceLimit: params.bounces,
             LightSampleRays: params.lightSampleRays,
+            LightIntensity: parseFloat(params.lightIntensity),
+            DebugLightSize: parseFloat(params.debugLightSize),
           },
         };
 

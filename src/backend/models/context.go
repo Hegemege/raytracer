@@ -172,7 +172,7 @@ func (context *RenderContext) Initialize(rawTextureData []*[]byte) error {
 			transform = transform.Mul4(mgl32.Mat3FromCols(normal.Cross(up), up, normal).Mat4())
 
 			size := mgl32.Vec2{shortestSide.Len() / 2.0, middleSide.Len() / 2.0}
-			emission := mgl32.Vec3{100, 100, 100}
+			emission := mgl32.Vec3{100, 100, 100} // Overriden in render pass Initialize()
 
 			light := NewAreaLight(transform, size, emission, normal)
 
@@ -211,9 +211,11 @@ func (pass *RenderPass) Initialize(context *RenderContext) {
 		// Create debug light
 		transform := pass.Camera.Transform
 		normal := mgl32.TransformCoordinate(mgl32.Vec3{0, 0, 1}, transform).Sub(transform.Col(3).Vec3())
-		size := mgl32.Vec2{1.0, 1.0}
-		emission := mgl32.Vec3{100, 100, 100}
+		size := mgl32.Vec2{pass.Settings.DebugLightSize, pass.Settings.DebugLightSize}
+		emission := mgl32.Vec3{1, 1, 1}.Mul(pass.Settings.LightIntensity)
 		light := NewAreaLight(transform, size, emission, normal)
 		context.Light = light
+	} else {
+		context.Light.Emission = mgl32.Vec3{1, 1, 1}.Mul(pass.Settings.LightIntensity)
 	}
 }
