@@ -76,11 +76,18 @@ export default class Renderer extends BaseComponent {
   };
 
   handlePresetChange = async (e, preset, index) => {
+    // If the index didn't change, no need to re-initialize the workers
+    let samePreset = this.state.selectedPreset === index;
     preset.key = Math.random();
 
     await this.setStateAsync({
       ...this.state,
       loadingPreset: true,
+      initialized: samePreset ? this.state.initialized : false,
+      completed: samePreset ? this.state.completed : false,
+      renderEventData: samePreset ? this.state.renderEventData : {},
+      imageData: samePreset ? this.state.imageData : [],
+      renderKey: samePreset ? this.state.renderKey : this.state.renderKey + 1,
     });
 
     await this.setPreset(preset);
@@ -260,7 +267,6 @@ export default class Renderer extends BaseComponent {
       } catch (error) {
         console.log("Could not save to indexed DB", error);
       }
-      //localStorage.setItem(bvhKey, bvhData);
     }
 
     if (this.state.aborted) {
@@ -700,7 +706,7 @@ export default class Renderer extends BaseComponent {
       imageData: [],
       running: false,
       rendering: false,
-      initialized: true,
+      initialized: false,
       completed: true,
       aborted: true,
       initializeEndTime: this.state.initialized
