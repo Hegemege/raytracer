@@ -6,8 +6,23 @@
   line-height: 0;
 }
 
-.form-margin {
+.left-margin {
+  margin-left: 0.5rem;
+}
+
+.right-margin {
   margin-right: 0.5rem;
+}
+
+.preset-selector {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.param-row {
+  display: flex;
+  align-items: flex-end;
 }
 
 .render-stats {

@@ -1,4 +1,4 @@
-import { Row, Button, Container, Col } from "react-bootstrap";
+import { Row, Button, Container, Col, Dropdown } from "react-bootstrap";
 
 import BaseComponent from "../Common/BaseComponent";
 import React from "react";
@@ -16,6 +16,8 @@ import {
   rotateAroundZAxis,
   multiplyMatrices,
 } from "../../utility/matrix";
+
+import { loadFromIndexedDB, saveToIndexedDB } from "../../utility/indexeddb";
 
 export default class Renderer extends BaseComponent {
   constructor(props) {
@@ -40,23 +42,61 @@ export default class Renderer extends BaseComponent {
       renderEventData: {},
       renderTasks: [],
       renderParams: null,
+      selectedPreset: 0,
+      loadingPreset: false,
     };
     this.textureData = [];
     this.renderTasks = [];
     this.taskIdBase = 0;
+    this.presets = [];
+    this.forceReload = false;
   }
+
+  getPreset = () => {
+    return this.presets[this.state.selectedPreset];
+  };
 
   componentDidMount = async () => {
     await this.reloadWebAssembly();
-    //await this.loadScene("scenes/simple-spheres.json");
+
+    // Load presets
+    await this.loadPreset("presets/cornell-box.json");
+    await this.loadPreset("presets/sponza.json");
+
+    // TODO: Load saved presets from localstorage?
+
+    let preset = this.getPreset();
+    this.setPreset(preset);
+  };
+
+  loadPreset = async (path) => {
+    let preset = await (await fetch(path)).json();
+    preset.key = Math.random();
+    this.presets.push(preset);
+  };
+
+  handlePresetChange = async (e, preset, index) => {
+    preset.key = Math.random();
+
+    await this.setStateAsync({
+      ...this.state,
+      loadingPreset: true,
+    });
+
+    await this.setPreset(preset);
+
+    await this.setStateAsync({
+      ...this.state,
+      selectedPreset: index,
+      loadingPreset: false,
+    });
+  };
+
+  setPreset = async (preset) => {
     await this.loadObj(
-      "scenes/obj/cornell-box/cornell-box.obj",
-      "scenes/obj/cornell-box/cornell-box.mtl"
-
-      //"scenes/obj/sponza/sponza.obj",
-      //"scenes/obj/sponza/sponza.mtl"
-
-      //"scenes/obj/sponza/textures/lion.png"
+      preset.params.objectPath,
+      preset.params.materialPath,
+      preset.params.texturePaths
     );
   };
 
@@ -75,7 +115,7 @@ export default class Renderer extends BaseComponent {
     });
   };
 
-  loadObj = async (objFile, mtlFile, ...textureFiles) => {
+  loadObj = async (objFile, mtlFile, textureFiles) => {
     let objRequest = await fetch(objFile);
     let mtlRequest = await fetch(mtlFile);
     let objData = await objRequest.text();
@@ -181,19 +221,47 @@ export default class Renderer extends BaseComponent {
       return;
     }
 
-    // Build BVH
-    let bvhWorker = workers[0];
-    let buildBVHPromise = new Promise((resolve) => {
-      bvhWorker.worker.addEventListener("message", async (event) => {
-        if (event.data.buildBVHDone) {
-          resolve(event.data.output);
-        }
+    let bvhKey = params.objectPath;
+    let bvhData = undefined;
+
+    if (params.loadBVH) {
+      try {
+        let savedBVH = await loadFromIndexedDB("bvhStore", bvhKey);
+        bvhData = savedBVH.data;
+      } catch (error) {
+        // No need to do anything
+      }
+    }
+
+    if (!bvhData) {
+      // Build BVH
+      let bvhWorker = workers[0];
+      let buildBVHPromise = new Promise((resolve) => {
+        bvhWorker.worker.addEventListener("message", async (event) => {
+          if (event.data.buildBVHDone) {
+            resolve(event.data.output);
+          }
+        });
+
+        this.buildBVHWorker(bvhWorker);
       });
 
-      this.buildBVHWorker(bvhWorker);
-    });
+      bvhData = JSON.stringify(await buildBVHPromise);
+    }
 
-    let bvhData = JSON.stringify(await buildBVHPromise);
+    if (params.saveBVH) {
+      let rawData = {
+        id: bvhKey,
+        data: bvhData,
+      };
+
+      try {
+        await saveToIndexedDB("bvhStore", rawData);
+      } catch (error) {
+        console.log("Could not save to indexed DB", error);
+      }
+      //localStorage.setItem(bvhKey, bvhData);
+    }
 
     if (this.state.aborted) {
       await this.terminateWorkers();
@@ -711,20 +779,51 @@ export default class Renderer extends BaseComponent {
       }
     }
 
+    // Presets
+    let preset = this.presets[this.state.selectedPreset];
+    let chosenPresetName = preset ? preset.name : "No preset chosen";
+
     return (
       <Container>
         <Row>
           <h1>Renderer</h1>
         </Row>
-        <RendererParams
-          running={this.state.running}
-          initialized={this.state.initialized}
-          aborted={this.state.aborted}
-          onAbort={this.onAbort}
-          onStartRender={this.onStartRender}
-          onInitializeContext={this.onInitializeContext}
-          onChanged={this.onParamsChanged}
-        ></RendererParams>
+        <Row className="preset-selector">
+          <span>Preset</span>
+          <Dropdown className="left-margin">
+            <Dropdown.Toggle
+              variant="outline-primary"
+              size="sm"
+              disabled={this.state.running || this.state.loadingPreset}
+            >
+              {chosenPresetName}
+            </Dropdown.Toggle>
+
+            <Dropdown.Menu>
+              {this.presets.map((preset, i) => (
+                <Dropdown.Item
+                  key={i}
+                  onClick={(e) => this.handlePresetChange(e, preset, i)}
+                >
+                  {preset.name}
+                </Dropdown.Item>
+              ))}
+            </Dropdown.Menu>
+          </Dropdown>
+        </Row>
+        {preset && (
+          <RendererParams
+            running={this.state.running}
+            initialized={this.state.initialized}
+            aborted={this.state.aborted}
+            params={preset.params}
+            paramKey={preset.key}
+            onAbort={this.onAbort}
+            onStartRender={this.onStartRender}
+            onInitializeContext={this.onInitializeContext}
+            onChanged={this.onParamsChanged}
+          ></RendererParams>
+        )}
         <Row>
           <Col>
             <Row>
@@ -738,7 +837,7 @@ export default class Renderer extends BaseComponent {
             <Row>
               <Button
                 variant="outline-primary"
-                className="form-margin"
+                className="right-margin"
                 onClick={this.onCopyClicked}
               >
                 <FontAwesomeIcon
@@ -763,7 +862,7 @@ export default class Renderer extends BaseComponent {
               </div>
             ) : null}
             <div>
-              <div>Est. MRays {(estimatedRays / 1000000).toFixed(2)}</div>
+              <div>Est. rays {(estimatedRays / 1000000).toFixed(2)}M</div>
             </div>
           </Col>
           <Col>

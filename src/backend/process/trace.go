@@ -30,6 +30,9 @@ func Trace(context *models.RenderContext, pass *models.RenderPass, ray *models.R
 	}
 
 	result := rayCast(context, ray, math.MaxFloat32)
+	if result == nil {
+		return c
+	}
 
 	shadingTerms := make([]mgl32.Vec3, 0)
 	brdfTerms := make([]mgl32.Vec3, 0)
@@ -39,10 +42,6 @@ func Trace(context *models.RenderContext, pass *models.RenderPass, ray *models.R
 	currentDir := ray.Direction
 
 	for {
-		if result == nil {
-			break
-		}
-
 		shading := mgl32.Vec3{0, 0, 0}
 		diffuse, normal, _ := getMaterialParameters(context, result)
 
@@ -91,6 +90,11 @@ func Trace(context *models.RenderContext, pass *models.RenderPass, ray *models.R
 
 		// New bounce
 		result = rayCast(context, bounceRay, math.MaxFloat32)
+		if result == nil {
+			brdfTerms = append(brdfTerms, mgl32.Vec3{0, 0, 0})
+			break
+		}
+
 		indirectCounter++
 
 		brdfTheta := currentDir.Dot(sample) * -1
@@ -111,12 +115,7 @@ func Trace(context *models.RenderContext, pass *models.RenderPass, ray *models.R
 		brdfTerms[i] = utility.MultiplyColor(brdfTerms[i], shadingTerms[i+1].Add(brdfTerms[i+1]))
 	}
 
-	if len(shadingTerms) > 0 {
-		return shadingTerms[0].Add(brdfTerms[0])
-	}
-
-	// Did not hit anything
-	return c
+	return shadingTerms[0].Add(brdfTerms[0])
 }
 
 func rayCast(context *models.RenderContext, ray *models.Ray, initialTmin float32) *RaycastResult {

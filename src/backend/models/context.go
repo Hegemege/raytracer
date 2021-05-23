@@ -210,7 +210,7 @@ func (pass *RenderPass) Initialize(context *RenderContext) {
 	if context.useDebugLight {
 		// Create debug light
 		transform := pass.Camera.Transform
-		normal := mgl32.TransformCoordinate(mgl32.Vec3{0, 0, 1}, transform).Sub(transform.Col(3).Vec3())
+		normal := mgl32.TransformCoordinate(mgl32.Vec3{0, 0, -1}, transform).Sub(transform.Col(3).Vec3())
 		size := mgl32.Vec2{pass.Settings.DebugLightSize, pass.Settings.DebugLightSize}
 		emission := mgl32.Vec3{1, 1, 1}.Mul(pass.Settings.LightIntensity)
 		light := NewAreaLight(transform, size, emission, normal)

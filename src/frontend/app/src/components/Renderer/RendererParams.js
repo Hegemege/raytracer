@@ -7,6 +7,7 @@ export default class RendererParams extends BaseComponent {
   constructor(props) {
     super(props);
     this.state = {
+      presetName: undefined,
       params: {
         width: 100,
         height: 100,
@@ -23,26 +24,53 @@ export default class RendererParams extends BaseComponent {
         bounces: 10,
         lightSampleRays: 4,
         raysPerPixel: 10,
-        sceneData: null,
-        objData: "",
-        mtlData: "",
         workerCount: 16,
         taskCount: 16,
         rngSeed: this.getNewSeed(),
         gammaCorrection: true,
         gamma: "2.2",
         useBVH: true,
+        saveBVH: true,
+        loadBVH: true,
         maxLeafSize: 6,
         lightIntensity: 100,
         debugLightSize: 1.0,
         renderAfterInitialization: true,
         incrementalRendering: false,
+        // Note: when adding properties, add them to the preset.json files too
       },
     };
+
+    this.projectionMap = ["Perspective", "Ortographic"];
   }
 
   componentDidMount = async () => {
-    // TODO: Save/load config from localstorage/json
+    this.onParamsChanged();
+  };
+
+  componentDidUpdate = async () => {
+    if (!this.props.params) {
+      return;
+    }
+
+    let samePreset = this.state.paramKey === this.props.paramKey;
+
+    if (samePreset) {
+      return;
+    }
+
+    // Different preset or force rollback changes
+    await this.setStateAsync({
+      ...this.state,
+      paramKey: this.props.paramKey,
+      params: {
+        ...this.props.params,
+        rngSeed: this.props.params.rngSeed
+          ? this.props.params.rngSeed
+          : this.getNewSeed(),
+      },
+    });
+
     this.onParamsChanged();
   };
 
@@ -150,8 +178,8 @@ export default class RendererParams extends BaseComponent {
     return (
       <Container>
         <Form>
-          <Row>
-            <Form.Group controlId="formWidth" className="form-margin">
+          <Row className="param-row">
+            <Form.Group controlId="formWidth" className="right-margin">
               <Form.Label>Width px</Form.Label>
               <Form.Control
                 htmlSize="6"
@@ -162,7 +190,7 @@ export default class RendererParams extends BaseComponent {
               />
             </Form.Group>
 
-            <Form.Group controlId="formHeight" className="form-margin">
+            <Form.Group controlId="formHeight" className="right-margin">
               <Form.Label>Height px</Form.Label>
               <Form.Control
                 htmlSize="6"
@@ -173,7 +201,7 @@ export default class RendererParams extends BaseComponent {
               />
             </Form.Group>
 
-            <Form.Group controlId="formScale" className="form-margin">
+            <Form.Group controlId="formScale" className="right-margin">
               <Form.Label>Scale %</Form.Label>
               <Form.Control
                 htmlSize="6"
@@ -184,22 +212,23 @@ export default class RendererParams extends BaseComponent {
               />
             </Form.Group>
 
-            <Form.Group controlId="formProjection" className="form-margin">
+            <Form.Group controlId="formProjection" className="right-margin">
               <Form.Label>Projection</Form.Label>
               <Form.Control
                 as="select"
-                defaultValue={this.state.params.projection}
+                value={this.projectionMap[this.state.params.projection]}
                 onChange={this.handleProjectionChanged}
               >
-                <option>Perspective</option>
-                <option>Ortographic</option>
+                {this.projectionMap.map((item, index) => (
+                  <option key={index}>{item}</option>
+                ))}
               </Form.Control>
             </Form.Group>
 
             <Form.Group
               hidden={this.state.params.projection !== 0}
               controlId="formFoV"
-              className="form-margin"
+              className="right-margin"
             >
               <Form.Label>Field of View</Form.Label>
               <Form.Control
@@ -214,7 +243,7 @@ export default class RendererParams extends BaseComponent {
             <Form.Group
               hidden={this.state.params.projection !== 1}
               controlId="formOrtographicSize"
-              className="form-margin"
+              className="right-margin"
             >
               <Form.Label>Ortographic Size</Form.Label>
               <Form.Control
@@ -228,7 +257,7 @@ export default class RendererParams extends BaseComponent {
               />
             </Form.Group>
 
-            <Form.Group controlId="formRaysPerPixel" className="form-margin">
+            <Form.Group controlId="formRaysPerPixel" className="right-margin">
               <Form.Label>Rays Per Pixel</Form.Label>
               <Form.Control
                 htmlSize="6"
@@ -239,7 +268,7 @@ export default class RendererParams extends BaseComponent {
               />
             </Form.Group>
 
-            <Form.Group controlId="formBounces" className="form-margin">
+            <Form.Group controlId="formBounces" className="right-margin">
               <Form.Label>Bounces</Form.Label>
               <Form.Control
                 htmlSize="6"
@@ -250,7 +279,10 @@ export default class RendererParams extends BaseComponent {
               />
             </Form.Group>
 
-            <Form.Group controlId="formLightSampleRays" className="form-margin">
+            <Form.Group
+              controlId="formLightSampleRays"
+              className="right-margin"
+            >
               <Form.Label>Light Sample Rays</Form.Label>
               <Form.Control
                 htmlSize="6"
@@ -263,8 +295,8 @@ export default class RendererParams extends BaseComponent {
               />
             </Form.Group>
           </Row>
-          <Row>
-            <Form.Group controlId="formX" className="form-margin">
+          <Row className="param-row">
+            <Form.Group controlId="formX" className="right-margin">
               <Form.Label>X</Form.Label>
               <Form.Control
                 htmlSize="6"
@@ -274,7 +306,7 @@ export default class RendererParams extends BaseComponent {
                 onChange={(e) => this.handleFloatParamChanged(e, "x")}
               />
             </Form.Group>
-            <Form.Group controlId="formY" className="form-margin">
+            <Form.Group controlId="formY" className="right-margin">
               <Form.Label>Y</Form.Label>
               <Form.Control
                 htmlSize="6"
@@ -284,7 +316,7 @@ export default class RendererParams extends BaseComponent {
                 onChange={(e) => this.handleFloatParamChanged(e, "y")}
               />
             </Form.Group>
-            <Form.Group controlId="formZ" className="form-margin">
+            <Form.Group controlId="formZ" className="right-margin">
               <Form.Label>Z</Form.Label>
               <Form.Control
                 htmlSize="6"
@@ -295,7 +327,7 @@ export default class RendererParams extends BaseComponent {
               />
             </Form.Group>
 
-            <Form.Group controlId="formrX" className="form-margin">
+            <Form.Group controlId="formrX" className="right-margin">
               <Form.Label>rX</Form.Label>
               <Form.Control
                 htmlSize="6"
@@ -305,7 +337,7 @@ export default class RendererParams extends BaseComponent {
                 onChange={(e) => this.handleFloatParamChanged(e, "rx")}
               />
             </Form.Group>
-            <Form.Group controlId="formrY" className="form-margin">
+            <Form.Group controlId="formrY" className="right-margin">
               <Form.Label>rY</Form.Label>
               <Form.Control
                 htmlSize="6"
@@ -315,7 +347,7 @@ export default class RendererParams extends BaseComponent {
                 onChange={(e) => this.handleFloatParamChanged(e, "ry")}
               />
             </Form.Group>
-            <Form.Group controlId="formrZ" className="form-margin">
+            <Form.Group controlId="formrZ" className="right-margin">
               <Form.Label>rZ</Form.Label>
               <Form.Control
                 htmlSize="6"
@@ -326,7 +358,7 @@ export default class RendererParams extends BaseComponent {
               />
             </Form.Group>
 
-            <Form.Group controlId="formLightIntensity" className="form-margin">
+            <Form.Group controlId="formLightIntensity" className="right-margin">
               <Form.Label>Light Intensity</Form.Label>
               <Form.Control
                 htmlSize="6"
@@ -339,7 +371,7 @@ export default class RendererParams extends BaseComponent {
               />
             </Form.Group>
 
-            <Form.Group controlId="formDebugLightSize" className="form-margin">
+            <Form.Group controlId="formDebugLightSize" className="right-margin">
               <Form.Label>Debug Light Size</Form.Label>
               <Form.Control
                 htmlSize="6"
@@ -352,8 +384,8 @@ export default class RendererParams extends BaseComponent {
               />
             </Form.Group>
           </Row>
-          <Row>
-            <Form.Group controlId="formWorkerCount" className="form-margin">
+          <Row className="param-row">
+            <Form.Group controlId="formWorkerCount" className="right-margin">
               <Form.Label>Workers</Form.Label>
               <Form.Control
                 htmlSize="6"
@@ -363,7 +395,7 @@ export default class RendererParams extends BaseComponent {
                 onChange={(e) => this.handleIntParamChanged(e, "workerCount")}
               />
             </Form.Group>
-            <Form.Group controlId="formTaskCount" className="form-margin">
+            <Form.Group controlId="formTaskCount" className="right-margin">
               <Form.Label>
                 Tasks (n<sup>2</sup>)
               </Form.Label>
@@ -377,7 +409,7 @@ export default class RendererParams extends BaseComponent {
               />
             </Form.Group>
 
-            <Form.Group controlId="formRngSeed" className="form-margin">
+            <Form.Group controlId="formRngSeed" className="right-margin">
               <Form.Label>RNG Seed</Form.Label>
               <Form.Control
                 htmlSize="22"
@@ -387,11 +419,7 @@ export default class RendererParams extends BaseComponent {
                 onChange={(e) => this.handleIntParamChanged(e, "rngSeed")}
               />
             </Form.Group>
-
-            <Form.Group
-              controlId="formCheckboxGammaCorrection"
-              className="form-margin"
-            >
+            <Form.Group controlId="formGamma" className="right-margin">
               <Form.Check
                 type="checkbox"
                 label="Gamma correction"
@@ -400,9 +428,6 @@ export default class RendererParams extends BaseComponent {
                   this.handleBoolParamChanged(e, "gammaCorrection")
                 }
               />
-            </Form.Group>
-
-            <Form.Group controlId="formGamma" className="form-margin">
               <Form.Label>Gamma</Form.Label>
               <Form.Control
                 htmlSize="6"
@@ -412,15 +437,13 @@ export default class RendererParams extends BaseComponent {
                 onChange={(e) => this.handleFloatParamChanged(e, "gamma")}
               />
             </Form.Group>
-            <Form.Group controlId="formCheckboxUseBVH" className="form-margin">
+            <Form.Group controlId="formBVHSettings" className="right-margin">
               <Form.Check
                 type="checkbox"
                 label="Use BVH"
                 checked={this.state.params.useBVH}
                 onChange={(e) => this.handleBoolParamChanged(e, "useBVH")}
               />
-            </Form.Group>
-            <Form.Group controlId="formMaxLeafSize" className="form-margin">
               <Form.Label>Max Leaf Tris</Form.Label>
               <Form.Control
                 htmlSize="6"
@@ -430,11 +453,29 @@ export default class RendererParams extends BaseComponent {
                 onChange={(e) => this.handleIntParamChanged(e, "maxLeafSize")}
               />
             </Form.Group>
+            <Form.Group
+              controlId="formCheckboxSaveBVH"
+              className="right-margin"
+            >
+              <Form.Label>Caching</Form.Label>
+              <Form.Check
+                type="checkbox"
+                label="Save BVH"
+                checked={this.state.params.saveBVH}
+                onChange={(e) => this.handleBoolParamChanged(e, "saveBVH")}
+              />
+              <Form.Check
+                type="checkbox"
+                label="Load BVH"
+                checked={this.state.params.loadBVH}
+                onChange={(e) => this.handleBoolParamChanged(e, "loadBVH")}
+              />
+            </Form.Group>
           </Row>
           <Row>
             <Form.Group
               controlId="formCheckboxRenderAfterInitialization"
-              className="form-margin"
+              className="right-margin"
             >
               <Form.Check
                 type="checkbox"
@@ -447,7 +488,7 @@ export default class RendererParams extends BaseComponent {
             </Form.Group>
             <Form.Group
               controlId="formCheckboxIncrementalRendering"
-              className="form-margin"
+              className="right-margin"
             >
               <Form.Check
                 type="checkbox"
@@ -463,14 +504,14 @@ export default class RendererParams extends BaseComponent {
             <Button
               variant="primary"
               type="submit"
-              className="form-margin"
+              className="right-margin"
               onClick={this.onInitializeClicked}
             >
               Initialize
             </Button>
             <Button
               variant="primary"
-              className="form-margin"
+              className="right-margin"
               onClick={this.onRenderClicked}
               disabled={!this.props.initialized || this.props.aborted}
             >
