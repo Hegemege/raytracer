@@ -340,6 +340,7 @@ export default class Renderer extends BaseComponent {
             LightIntensity: parseFloat(params.lightIntensity),
             DebugLightSize: parseFloat(params.debugLightSize),
           },
+          IncrementalRendering: params.incrementalRendering,
         };
 
         this.renderTasks.push(task);
@@ -353,9 +354,14 @@ export default class Renderer extends BaseComponent {
       worker.done = false;
       worker.output = null;
 
+      let type = "askForWork";
+      if (params.incrementalRendering) {
+        type = "askForWorkIncremental";
+      }
+
       worker.worker.postMessage({
         workerId: worker.workerId,
-        type: "askForWork",
+        type: type,
       });
     }
   };
@@ -381,6 +387,9 @@ export default class Renderer extends BaseComponent {
       });
       worker.worker.addEventListener("message", async (event) => {
         this.workerRenderDone(event, worker);
+      });
+      worker.worker.addEventListener("message", async (event) => {
+        this.workerIncrementalRenderDone(event, worker);
       });
 
       // Listen to messages from the worker
@@ -484,6 +493,55 @@ export default class Renderer extends BaseComponent {
     }
   };
 
+  workerIncrementalRenderDone = async (event, worker) => {
+    if (event.data.incrementalRenderPartial) {
+      if (event.data.output) {
+        let params = JSON.parse(event.data.params);
+        let imageData = [...this.state.imageData];
+        // Remove existing image data for the given worker
+        let existingIndex = imageData.findIndex(
+          (item) => item.params.XOffset == event.data.params.XOffset
+        );
+        if (existingIndex !== -1) {
+          imageData.splice(existingIndex, 1);
+        }
+        imageData.push({
+          params: params,
+          imageData: event.data.output.imageData,
+        });
+        await this.setStateAsync({
+          ...this.state,
+          imageData: imageData,
+        });
+      } else {
+        // Just starting the incremental rendering
+        if (this.renderTasks.length > 0) {
+          let task = this.renderTasks.pop();
+          this.incrementalRenderWorker(worker, task);
+        } else {
+          worker.done = true;
+        }
+      }
+    }
+
+    if (event.data.incrementalRenderDone) {
+      worker.done = true;
+
+      // If all workers are done, mark no longer running
+      if (
+        Object.keys(this.workers).filter((worker) => !this.workers[worker].done)
+          .length == 0
+      ) {
+        await this.setStateAsync({
+          ...this.state,
+          running: false,
+          completed: true,
+          renderEndTime: Date.now(),
+        });
+      }
+    }
+  };
+
   initializeWorker = async (worker, params) => {
     // Split texture data from params
     let textureData = [];
@@ -525,12 +583,22 @@ export default class Renderer extends BaseComponent {
     });
   };
 
-  renderWorker = async (worker, params) => {
+  renderWorker = async (worker, task) => {
     worker.worker.postMessage({
       workerId: worker.workerId,
-      taskId: params.TaskID,
+      taskId: task.TaskID,
       type: "render",
-      renderParams: JSON.stringify(params),
+      renderParams: JSON.stringify(task),
+    });
+  };
+
+  incrementalRenderWorker = async (worker, task) => {
+    worker.worker.postMessage({
+      workerId: worker.workerId,
+      taskId: task.TaskID,
+      type: "incrementalRender",
+      renderParams: JSON.stringify(task),
+      raysPerPixel: task.Camera.RaysPerPixel,
     });
   };
 

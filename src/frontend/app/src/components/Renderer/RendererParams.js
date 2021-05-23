@@ -33,9 +33,10 @@ export default class RendererParams extends BaseComponent {
         gamma: "2.2",
         useBVH: true,
         maxLeafSize: 6,
-        renderAfterInitialization: true,
         lightIntensity: 100,
         debugLightSize: 1.0,
+        renderAfterInitialization: true,
+        incrementalRendering: false,
       },
     };
   }
@@ -46,6 +47,16 @@ export default class RendererParams extends BaseComponent {
   };
 
   onParamsChanged = async () => {
+    if (this.state.params.incrementalRendering) {
+      await this.setStateAsync({
+        ...this.state,
+        params: {
+          ...this.state.params,
+          taskCount: this.state.params.workerCount,
+        },
+      });
+    }
+
     await this.props.onChanged({ ...this.state.params });
   };
 
@@ -357,6 +368,7 @@ export default class RendererParams extends BaseComponent {
                 Tasks (n<sup>2</sup>)
               </Form.Label>
               <Form.Control
+                disabled={this.state.params.incrementalRendering}
                 htmlSize="6"
                 type="text"
                 label="Tasks"
@@ -420,13 +432,29 @@ export default class RendererParams extends BaseComponent {
             </Form.Group>
           </Row>
           <Row>
-            <Form.Group controlId="formCheckboxRenderAfterInitialization">
+            <Form.Group
+              controlId="formCheckboxRenderAfterInitialization"
+              className="form-margin"
+            >
               <Form.Check
                 type="checkbox"
                 label="Render after initialization"
                 checked={this.state.params.renderAfterInitialization}
                 onChange={(e) =>
                   this.handleBoolParamChanged(e, "renderAfterInitialization")
+                }
+              />
+            </Form.Group>
+            <Form.Group
+              controlId="formCheckboxIncrementalRendering"
+              className="form-margin"
+            >
+              <Form.Check
+                type="checkbox"
+                label="Incremental rendering"
+                checked={this.state.params.incrementalRendering}
+                onChange={(e) =>
+                  this.handleBoolParamChanged(e, "incrementalRendering")
                 }
               />
             </Form.Group>

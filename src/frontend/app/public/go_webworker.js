@@ -15,6 +15,8 @@ function progressUpdate(params) {
   let go = null;
   let workerId = null;
   let renderFunc = null;
+  let incrementalRenderFunc = null;
+  let initializeIncrementalRenderFunc = null;
   let buildBVHFunc = null;
   let loadBVHFunc = null;
 
@@ -64,6 +66,8 @@ function progressUpdate(params) {
         "ms"
       );
       renderFunc = self.render;
+      incrementalRenderFunc = self.incrementalRender;
+      initializeIncrementalRenderFunc = self.initializeIncrementalRender;
       buildBVHFunc = self.buildBVH;
       loadBVHFunc = self.loadBVH;
 
@@ -114,10 +118,42 @@ function progressUpdate(params) {
         output: JSON.parse(outputRaw),
         params: e.data.renderParams, // return original params for parsing the final image
       });
+    } else if (e.data.type === "incrementalRender") {
+      log(workerId, "Incremental rendering task", e.data.taskId);
+      let renderStartTime = Date.now();
+
+      initializeIncrementalRenderFunc(e.data.renderParams);
+
+      for (let i = 0; i < e.data.raysPerPixel; i++) {
+        // Main render call
+        let outputRaw = incrementalRenderFunc(e.data.renderParams);
+
+        postMessage({
+          incrementalRenderPartial: true,
+          workerId: workerId,
+          output: JSON.parse(outputRaw),
+          params: e.data.renderParams, // return original params for parsing the final image
+        });
+      }
+
+      postMessage({
+        incrementalRenderDone: true,
+        workerId: workerId,
+      });
+
+      log(workerId, "Rendering complete!");
+      log(workerId, "Took", Date.now() - renderStartTime, "ms");
     } else if (e.data.type === "askForWork") {
       // Used for the first task
       postMessage({
         renderDone: true,
+        workerId: workerId,
+        output: null,
+      });
+    } else if (e.data.type === "askForWorkIncremental") {
+      // Used for the first task
+      postMessage({
+        incrementalRenderPartial: true,
         workerId: workerId,
         output: null,
       });

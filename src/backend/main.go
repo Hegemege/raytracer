@@ -26,6 +26,8 @@ func main() {
 	js.Global().Set("buildBVH", js.FuncOf(buildBVH))
 	js.Global().Set("loadBVH", js.FuncOf(loadBVH))
 	js.Global().Set("render", js.FuncOf(render))
+	js.Global().Set("incrementalRender", js.FuncOf(incrementalRender))
+	js.Global().Set("initializeIncrementalRender", js.FuncOf(initializeIncrementalRender))
 
 	<-make(chan bool)
 }
@@ -176,6 +178,124 @@ func render(this js.Value, args []js.Value) interface{} {
 
 	output := result.Output()
 	utility.ProgressUpdate(1.0, "output", pass.TaskID, context.Rays)
+
+	return output
+}
+
+var incrementalRenderPass *models.RenderPass
+var incrementalResult models.RenderResult
+var incrementalRenderingIndex int
+var incrementalRenderReportIndex int
+var incrementalRenderColors []mgl32.Vec3
+
+func initializeIncrementalRender(this js.Value, args []js.Value) interface{} {
+	if context.Debug {
+		println("Go WebAssembly initializeIncrementalRender call")
+	}
+	incrementalResult = models.RenderResult{}
+	incrementalRenderingIndex = 0
+	incrementalRenderReportIndex = 0
+
+	pass, err := parseRenderPass(args[0].String())
+	if err != nil {
+		return handleError(err, &incrementalResult)
+	}
+
+	incrementalRenderPass = pass
+
+	incrementalRenderPass.Initialize(context)
+
+	if activeRenderKey != incrementalRenderPass.RenderKey {
+		activeRenderKey = incrementalRenderPass.RenderKey
+		context.Rays = 0
+	}
+	incrementalRenderPass.Camera.Initialize(incrementalRenderPass.TotalWidth, incrementalRenderPass.TotalHeight)
+
+	// Fill with black
+	incrementalResult.ImageData = image.NewRGBA(image.Rect(0, 0, incrementalRenderPass.Width, incrementalRenderPass.Height))
+	draw.Draw(incrementalResult.ImageData, incrementalResult.ImageData.Bounds(), &image.Uniform{color.Black}, image.Point{}, draw.Src)
+
+	incrementalRenderColors = make([]mgl32.Vec3, incrementalRenderPass.Width*incrementalRenderPass.Height)
+	for j := 0; j < incrementalRenderPass.Height; j++ {
+		for i := 0; i < incrementalRenderPass.Width; i++ {
+			incrementalRenderColors[i+j*incrementalRenderPass.Width] = mgl32.Vec3{0, 0, 0}
+		}
+	}
+
+	return nil
+}
+
+// Renders a region given by the parameters
+func incrementalRender(this js.Value, args []js.Value) interface{} {
+	if context.Debug {
+		println("Go WebAssembly incrementalRender call")
+	}
+
+	pixelCount := incrementalRenderPass.Width * incrementalRenderPass.Height
+
+	// Send first 0% progress
+	if incrementalRenderingIndex == 0 {
+		utility.ProgressUpdate(0.0, "trace", incrementalRenderPass.TaskID, context.Rays)
+	}
+
+	totalPixelCount := pixelCount * incrementalRenderPass.Camera.RaysPerPixel
+
+	updateInterval := int(float32(totalPixelCount) / 10.0)
+
+	// Trace
+	ri := incrementalRenderingIndex * pixelCount
+	for i := 0; i < pixelCount; i++ {
+		x := i % incrementalRenderPass.Width
+		y := i / incrementalRenderPass.Width
+
+		if ri > incrementalRenderReportIndex+updateInterval {
+			incrementalRenderReportIndex = ri
+			progress := float32(incrementalRenderReportIndex) / float32(totalPixelCount)
+			utility.ProgressUpdate(progress, "trace", incrementalRenderPass.TaskID, context.Rays)
+		}
+		ri += 1
+
+		ray := incrementalRenderPass.Camera.GetCameraRay(incrementalRenderPass.XOffset, incrementalRenderPass.YOffset, x, y)
+
+		rayColor := process.Trace(context, incrementalRenderPass, ray)
+
+		incrementalRenderColors[i] = incrementalRenderColors[i].Add(rayColor)
+	}
+
+	incrementalRenderingIndex += 1
+
+	// Send last 100% progress
+	if incrementalRenderingIndex == incrementalRenderPass.Camera.RaysPerPixel {
+		utility.ProgressUpdate(1.0, "trace", incrementalRenderPass.TaskID, context.Rays)
+	}
+
+	for j := 0; j < incrementalRenderPass.Height; j++ {
+		for i := 0; i < incrementalRenderPass.Width; i++ {
+			c := incrementalRenderColors[i+j*incrementalRenderPass.Width]
+			c = c.Mul(1.0 / float32(incrementalRenderingIndex))
+
+			// Gamma correction
+			if incrementalRenderPass.Settings.GammaCorrection {
+				gamma := float64(1.0 / incrementalRenderPass.Settings.Gamma)
+				c = mgl32.Vec3{
+					float32(math.Pow(float64(c.X()), gamma)),
+					float32(math.Pow(float64(c.Y()), gamma)),
+					float32(math.Pow(float64(c.Z()), gamma)),
+				}
+			}
+
+			c = utility.ClampColor(c)
+
+			incrementalResult.ImageData.SetRGBA(i, j, color.RGBA{
+				R: uint8(255 * c.X()),
+				G: uint8(255 * c.Y()),
+				B: uint8(255 * c.Z()),
+				A: 255,
+			})
+		}
+	}
+
+	output := incrementalResult.Output()
 
 	return output
 }
