@@ -2,6 +2,7 @@ package models
 
 import (
 	"math"
+	"raytracer/utility"
 
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/udhos/gwob"
@@ -116,6 +117,11 @@ func (context *RenderContext) Initialize(rawTextureData []*[]byte) error {
 				v2 := mgl32.Vec3{c6, c7, c8}
 
 				tri := NewTriangle(v0, v1, v2, material, triangleIndex)
+				tri.TextureCoords = [3]mgl32.Vec2{
+					utility.TextureCoordinates(context.Object, strideIndex0),
+					utility.TextureCoordinates(context.Object, strideIndex1),
+					utility.TextureCoordinates(context.Object, strideIndex2),
+				}
 				triangleIndex++
 
 				context.Triangles = append(context.Triangles, tri)

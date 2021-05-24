@@ -7,6 +7,7 @@ import (
 	"syscall/js"
 
 	"github.com/go-gl/mathgl/mgl32"
+	"github.com/udhos/gwob"
 )
 
 func ProgressUpdate(progress float32, event string, taskId int, rays uint64) {
@@ -91,4 +92,12 @@ func Vec3Max(v1 mgl32.Vec3, v2 mgl32.Vec3) mgl32.Vec3 {
 		float32(math.Max(float64(v1.Y()), float64(v2.Y()))),
 		float32(math.Max(float64(v1.Z()), float64(v2.Z()))),
 	}
+}
+
+// TextureCoordinates gets texture coordinates for a stride index.
+func TextureCoordinates(o *gwob.Obj, stride int) mgl32.Vec2 {
+	offset := o.StrideOffsetPosition / 4
+	floatsPerStride := o.StrideSize / 4
+	f := offset + stride*floatsPerStride
+	return mgl32.Vec2{o.Coord[f+3], o.Coord[f+4]}
 }

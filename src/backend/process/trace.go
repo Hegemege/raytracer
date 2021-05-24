@@ -160,8 +160,24 @@ func getMaterialParameters(context *models.RenderContext, result *RaycastResult)
 
 	// Sample texture
 	if result.Triangle.Material.MapKd != "" {
-		//texture := context.TextureLookup[result.Triangle.Material.MapKd]
-		//sample :=
+		texture, found := context.TextureLookup[result.Triangle.Material.MapKd]
+		if found {
+			// Convert barycentric coords to uv
+			uv := result.Triangle.TextureCoords[0].
+				Mul(1.0 - result.U - result.V).
+				Add(result.Triangle.TextureCoords[1].Mul(result.U)).
+				Add(result.Triangle.TextureCoords[2].Mul(result.V))
+
+			// Clamp values as repeating
+			uv = uv.Sub(mgl32.Vec2{
+				float32(math.Floor(float64(uv.X()))),
+				float32(math.Floor(float64(uv.Y()))),
+			})
+
+			sample := texture.SampleUV(uv)
+			sample = utility.ClampColor(sample)
+			diffuse = utility.MultiplyColor(diffuse, sample)
+		}
 	}
 
 	// TODO: Normal map, specular map sampling

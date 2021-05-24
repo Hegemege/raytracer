@@ -10,8 +10,9 @@ import (
 )
 
 type Triangle struct {
-	Index    int
-	Vertices [3]mgl32.Vec3
+	Index         int
+	Vertices      [3]mgl32.Vec3
+	TextureCoords [3]mgl32.Vec2
 	// TODO: Add vertex normals
 
 	// For Woop intersection

@@ -130,10 +130,10 @@ export default class Renderer extends BaseComponent {
 
     let textures = [];
     for (let texture of textureFiles) {
-      let textureRequest = await fetch(texture);
+      let textureRequest = await fetch(texture.path);
       let textureData = await textureRequest.arrayBuffer();
       textures.push({
-        Name: texture.split("/").pop(),
+        Name: texture.name,
         Buffer: textureData, //this.arrayBufferToBase64(textureData),
       });
     }

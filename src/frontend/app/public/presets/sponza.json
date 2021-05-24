@@ -33,6 +33,103 @@
     "incrementalRendering": true,
     "objectPath": "scenes/obj/sponza/sponza.obj",
     "materialPath": "scenes/obj/sponza/sponza.mtl",
-    "texturePaths": ["scenes/obj/sponza/textures/lion.png"]
+    "texturePaths": [
+      {
+        "name": "textures\\sponza_thorn_diff.png",
+        "path": "scenes/obj/sponza/textures/sponza_thorn_diff.png"
+      },
+      {
+        "name": "textures\\vase_round.png",
+        "path": "scenes/obj/sponza/textures/vase_round.png"
+      },
+      {
+        "name": "textures\\vase_plant.png",
+        "path": "scenes/obj/sponza/textures/vase_plant.png"
+      },
+      {
+        "name": "textures\\background.png",
+        "path": "scenes/obj/sponza/textures/background.png"
+      },
+      {
+        "name": "textures\\spnza_bricks_a_diff.png",
+        "path": "scenes/obj/sponza/textures/spnza_bricks_a_diff.png"
+      },
+      {
+        "name": "textures\\sponza_arch_diff.png",
+        "path": "scenes/obj/sponza/textures/sponza_arch_diff.png"
+      },
+      {
+        "name": "textures\\sponza_ceiling_a_diff.png",
+        "path": "scenes/obj/sponza/textures/sponza_ceiling_a_diff.png"
+      },
+      {
+        "name": "textures\\sponza_column_a_diff.png",
+        "path": "scenes/obj/sponza/textures/sponza_column_a_diff.png"
+      },
+      {
+        "name": "textures\\sponza_floor_a_diff.png",
+        "path": "scenes/obj/sponza/textures/sponza_floor_a_diff.png"
+      },
+      {
+        "name": "textures\\sponza_column_c_diff.png",
+        "path": "scenes/obj/sponza/textures/sponza_column_c_diff.png"
+      },
+      {
+        "name": "textures\\sponza_details_diff.png",
+        "path": "scenes/obj/sponza/textures/sponza_details_diff.png"
+      },
+      {
+        "name": "textures\\sponza_column_b_diff.png",
+        "path": "scenes/obj/sponza/textures/sponza_column_b_diff.png"
+      },
+      {
+        "name": "textures\\sponza_flagpole_diff.png",
+        "path": "scenes/obj/sponza/textures/sponza_flagpole_diff.png"
+      },
+      {
+        "name": "textures\\sponza_fabric_green_diff.png",
+        "path": "scenes/obj/sponza/textures/sponza_fabric_green_diff.png"
+      },
+      {
+        "name": "textures\\sponza_fabric_blue_diff.png",
+        "path": "scenes/obj/sponza/textures/sponza_fabric_blue_diff.png"
+      },
+      {
+        "name": "textures\\sponza_fabric_diff.png",
+        "path": "scenes/obj/sponza/textures/sponza_fabric_diff.png"
+      },
+      {
+        "name": "textures\\sponza_curtain_blue_diff.png",
+        "path": "scenes/obj/sponza/textures/sponza_curtain_blue_diff.png"
+      },
+      {
+        "name": "textures\\sponza_curtain_diff.png",
+        "path": "scenes/obj/sponza/textures/sponza_curtain_diff.png"
+      },
+      {
+        "name": "textures\\sponza_curtain_green_diff.png",
+        "path": "scenes/obj/sponza/textures/sponza_curtain_green_diff.png"
+      },
+      {
+        "name": "textures\\chain_texture.png",
+        "path": "scenes/obj/sponza/textures/chain_texture.png"
+      },
+      {
+        "name": "textures\\vase_hanging.png",
+        "path": "scenes/obj/sponza/textures/vase_hanging.png"
+      },
+      {
+        "name": "textures\\vase_dif.png",
+        "path": "scenes/obj/sponza/textures/vase_dif.png"
+      },
+      {
+        "name": "textures\\lion.png",
+        "path": "scenes/obj/sponza/textures/lion.png"
+      },
+      {
+        "name": "textures\\sponza_roof_diff.png",
+        "path": "scenes/obj/sponza/textures/sponza_roof_diff.png"
+      }
+    ]
   }
 }
