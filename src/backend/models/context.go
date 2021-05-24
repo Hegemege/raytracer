@@ -71,6 +71,10 @@ func (context *RenderContext) Initialize(rawTextureData []*[]byte) error {
 		context.Object = obj
 		context.MaterialLib = &mtl
 
+		// Clear buffers
+		context.ObjBuffer = ""
+		context.MtlBuffer = ""
+
 		context.DebugMaterial = &gwob.Material{
 			Name:  "Debug",
 			Kd:    [3]float32{1, 0, 1},
@@ -90,6 +94,9 @@ func (context *RenderContext) Initialize(rawTextureData []*[]byte) error {
 			t := NewTexture(texture.Name, rawData)
 			context.TextureLookup[texture.Name] = t
 		}
+
+		// Deallocate raw textures
+		context.RawTextures = nil
 
 		// Build triangles
 		// TODO: Preallocate triangle array length
@@ -116,17 +123,23 @@ func (context *RenderContext) Initialize(rawTextureData []*[]byte) error {
 				v1 := mgl32.Vec3{c3, c4, c5}
 				v2 := mgl32.Vec3{c6, c7, c8}
 
+				t0u, t0v := utility.TextureCoordinates(context.Object, strideIndex0)
+				t1u, t1v := utility.TextureCoordinates(context.Object, strideIndex1)
+				t2u, t2v := utility.TextureCoordinates(context.Object, strideIndex2)
+
 				tri := NewTriangle(v0, v1, v2, material, triangleIndex)
 				tri.TextureCoords = [3]mgl32.Vec2{
-					utility.TextureCoordinates(context.Object, strideIndex0),
-					utility.TextureCoordinates(context.Object, strideIndex1),
-					utility.TextureCoordinates(context.Object, strideIndex2),
+					{t0u, t0v},
+					{t1u, t1v},
+					{t2u, t2v},
 				}
 				triangleIndex++
 
 				context.Triangles = append(context.Triangles, tri)
 			}
 		}
+
+		context.Object = nil
 
 		// Parse the area light
 		var minx, miny, minz float32 = math.MaxFloat32, math.MaxFloat32, math.MaxFloat32

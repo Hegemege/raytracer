@@ -95,9 +95,9 @@ func Vec3Max(v1 mgl32.Vec3, v2 mgl32.Vec3) mgl32.Vec3 {
 }
 
 // TextureCoordinates gets texture coordinates for a stride index.
-func TextureCoordinates(o *gwob.Obj, stride int) mgl32.Vec2 {
+func TextureCoordinates(o *gwob.Obj, stride int) (float32, float32) {
 	offset := o.StrideOffsetPosition / 4
 	floatsPerStride := o.StrideSize / 4
 	f := offset + stride*floatsPerStride
-	return mgl32.Vec2{o.Coord[f+3], o.Coord[f+4]}
+	return o.Coord[f+3], o.Coord[f+4]
 }
