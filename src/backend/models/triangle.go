@@ -27,11 +27,19 @@ type Triangle struct {
 	Edge1 mgl32.Vec3
 	Edge2 mgl32.Vec3
 
-	Center mgl32.Vec3
-	Min    mgl32.Vec3
-	Max    mgl32.Vec3
-
 	IsLight bool
+}
+
+func (t *Triangle) Center() mgl32.Vec3 {
+	return t.Vertices[0].Add(t.Vertices[1]).Add(t.Vertices[2]).Mul(1.0 / 3.0)
+}
+
+func (t *Triangle) Min() mgl32.Vec3 {
+	return utility.Vec3Min(utility.Vec3Min(t.Vertices[0], t.Vertices[1]), t.Vertices[2])
+}
+
+func (t *Triangle) Max() mgl32.Vec3 {
+	return utility.Vec3Max(utility.Vec3Max(t.Vertices[0], t.Vertices[1]), t.Vertices[2])
 }
 
 func NewTriangle(v0 mgl32.Vec3, v1 mgl32.Vec3, v2 mgl32.Vec3, material *gwob.Material, index int) *Triangle {
@@ -47,9 +55,6 @@ func NewTriangle(v0 mgl32.Vec3, v1 mgl32.Vec3, v2 mgl32.Vec3, material *gwob.Mat
 		Edge0:    v1.Sub(v0),
 		Edge1:    v2.Sub(v1),
 		Edge2:    v0.Sub(v2),
-		Center:   v0.Add(v1).Add(v2).Mul(1.0 / 3.0),
-		Min:      utility.Vec3Min(utility.Vec3Min(v0, v1), v2),
-		Max:      utility.Vec3Max(utility.Vec3Max(v0, v1), v2),
 		IsLight:  material.Name == "Light",
 		//LocalM:   mgl32.Mat3FromCols(v1.Sub(v0), v2.Sub(v0), normal).Inv(),
 	}
@@ -61,8 +66,8 @@ func NewTriangle(v0 mgl32.Vec3, v1 mgl32.Vec3, v2 mgl32.Vec3, material *gwob.Mat
 
 func TriangleSorter(axis mgl32.Vec3, triangles []*Triangle, startIndex int, endIndex int) {
 	sort.Slice(triangles[startIndex:endIndex+1], func(i, j int) bool {
-		a := axis.Dot(triangles[startIndex+i].Center)
-		b := axis.Dot(triangles[startIndex+j].Center)
+		a := axis.Dot(triangles[startIndex+i].Center())
+		b := axis.Dot(triangles[startIndex+j].Center())
 		if a == b {
 			return triangles[startIndex+i].Index < triangles[startIndex+j].Index
 		}

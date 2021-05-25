@@ -82,9 +82,9 @@ func buildBVHNode(context *RenderContext, triangles []*Triangle, startIndex int,
 		TriangleSorter(splitPlaneVec3, triangles, startIndex, endIndex)
 
 		splitIndex := startIndex
-		splitSideSoFar := splitPlaneVec3.Dot(triangles[startIndex].Center) > splitPlane.W()
+		splitSideSoFar := splitPlaneVec3.Dot(triangles[startIndex].Center()) > splitPlane.W()
 		for i := startIndex + 1; i < endIndex; i++ { // Exclude ends
-			if splitPlaneVec3.Dot(triangles[i].Center) > splitPlane.W() != splitSideSoFar {
+			if splitPlaneVec3.Dot(triangles[i].Center()) > splitPlane.W() != splitSideSoFar {
 				splitIndex = i
 				break
 			}
@@ -162,9 +162,9 @@ func GetSplitPlaneSAH(triangles []*Triangle, node *BVHNode) mgl32.Vec4 {
 		// Sort the triangle slice along the given axis, compare by center
 		TriangleSorter(axis, triangles, node.StartIndex, node.EndIndex)
 
-		leftMin, leftMax := triangles[node.StartIndex].Min, triangles[node.StartIndex].Max
+		leftMin, leftMax := triangles[node.StartIndex].Min(), triangles[node.StartIndex].Max()
 		leftAABB := MinimalAABB{Min: leftMin, Max: leftMax}
-		rightMin, rightMax := triangles[node.EndIndex].Min, triangles[node.EndIndex].Max
+		rightMin, rightMax := triangles[node.EndIndex].Min(), triangles[node.EndIndex].Max()
 		rightAABB := MinimalAABB{Min: rightMin, Max: rightMax}
 
 		// Precompute AABB sizes, dynamic programming
@@ -172,14 +172,14 @@ func GetSplitPlaneSAH(triangles []*Triangle, node *BVHNode) mgl32.Vec4 {
 		rightAABBSizes := make([]float32, triCount)
 
 		for i := node.StartIndex; i <= node.EndIndex; i++ {
-			leftAABB.Min = utility.Vec3Min(leftAABB.Min, triangles[i].Min)
-			leftAABB.Max = utility.Vec3Max(leftAABB.Max, triangles[i].Max)
+			leftAABB.Min = utility.Vec3Min(leftAABB.Min, triangles[i].Min())
+			leftAABB.Max = utility.Vec3Max(leftAABB.Max, triangles[i].Max())
 			leftAABBSizes[i-node.StartIndex] = leftAABB.Area()
 		}
 
 		for i := node.EndIndex; i >= node.StartIndex; i-- {
-			rightAABB.Min = utility.Vec3Min(rightAABB.Min, triangles[i].Min)
-			rightAABB.Max = utility.Vec3Max(rightAABB.Max, triangles[i].Max)
+			rightAABB.Min = utility.Vec3Min(rightAABB.Min, triangles[i].Min())
+			rightAABB.Max = utility.Vec3Max(rightAABB.Max, triangles[i].Max())
 			rightAABBSizes[i-node.StartIndex] = rightAABB.Area()
 		}
 
@@ -193,12 +193,14 @@ func GetSplitPlaneSAH(triangles []*Triangle, node *BVHNode) mgl32.Vec4 {
 			if cost < float32(lowestCost) {
 				lowestCost = cost
 				var w float32
+				center := triangles[i].Center()
+				nextCenter := triangles[i+1].Center()
 				if axis.X() > 0 {
-					w = (triangles[i].Center.X() + triangles[i+1].Center.X()) / 2.0
+					w = (center.X() + nextCenter.X()) / 2.0
 				} else if axis.Y() > 0 {
-					w = (triangles[i].Center.Y() + triangles[i+1].Center.Y()) / 2.0
+					w = (center.Y() + nextCenter.Y()) / 2.0
 				} else {
-					w = (triangles[i].Center.Z() + triangles[i+1].Center.Z()) / 2.0
+					w = (center.Z() + nextCenter.Z()) / 2.0
 				}
 
 				splitPlane = mgl32.Vec4{axis.X(), axis.Y(), axis.Z(), w}
