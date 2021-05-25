@@ -73,7 +73,7 @@ func buildBVHNode(context *RenderContext, triangles []*Triangle, startIndex int,
 	triCount := endIndex - startIndex + 1
 
 	// Split if there are too many child triangles
-	if triCount > context.BVHMaxLeafSize && context.UseBVH {
+	if context.UseBVH && triCount > context.BVHMaxLeafSize && depth < context.BVHMaxDepth {
 		splitPlane := GetSplitPlaneSAH(triangles, node)
 		splitPlaneVec3 := splitPlane.Vec3()
 
@@ -98,6 +98,16 @@ func buildBVHNode(context *RenderContext, triangles []*Triangle, startIndex int,
 
 		node.LeftChild = buildBVHNode(context, triangles, startIndex, splitIndex-1, depth+1, index)
 		node.RightChild = buildBVHNode(context, triangles, splitIndex, endIndex, depth+1, index)
+	} else {
+		// Add tricount to tracking
+		context.BVHNodeTriangles += uint64(triCount)
+
+		interval := uint64(len(context.Triangles) / 10.0)
+		if context.BVHNodeTriangles > context.BVHProgressReported+interval {
+			context.BVHProgressReported = context.BVHNodeTriangles
+			progress := float32(context.BVHNodeTriangles) / float32(len(context.Triangles))
+			utility.ProgressUpdate(progress, "RenderContext.BuildBVH", -1, 0)
+		}
 	}
 
 	return node

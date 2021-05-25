@@ -33,6 +33,7 @@ export default class RendererParams extends BaseComponent {
         saveBVH: true,
         loadBVH: true,
         maxLeafSize: 6,
+        maxDepth: 20,
         lightIntensity: 100,
         debugLightSize: 1.0,
         renderAfterInitialization: true,
@@ -446,11 +447,21 @@ export default class RendererParams extends BaseComponent {
               />
               <Form.Label>Max Leaf Tris</Form.Label>
               <Form.Control
-                htmlSize="6"
+                htmlSize="3"
                 type="text"
                 label="Max Leaf Tris"
                 value={this.state.params.maxLeafSize}
                 onChange={(e) => this.handleIntParamChanged(e, "maxLeafSize")}
+              />
+            </Form.Group>
+            <Form.Group controlId="formBVHDepth" className="right-margin">
+              <Form.Label>Max Depth</Form.Label>
+              <Form.Control
+                htmlSize="3"
+                type="text"
+                label="Max Depth"
+                value={this.state.params.maxDepth}
+                onChange={(e) => this.handleIntParamChanged(e, "maxDepth")}
               />
             </Form.Group>
             <Form.Group

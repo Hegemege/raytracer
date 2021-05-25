@@ -23,11 +23,14 @@ type RenderContext struct {
 
 	UseBVH         bool
 	BVHMaxLeafSize int
+	BVHMaxDepth    int
 
 	BVH *BVH
 
 	// Statistics
-	Rays uint64
+	Rays                uint64
+	BVHNodeTriangles    uint64
+	BVHProgressReported uint64
 
 	TextureLookup map[string]*Texture
 
@@ -52,6 +55,7 @@ func (context *RenderContext) Initialize(rawTextureData []*[]byte) error {
 
 	// Reset stats (if somehow set by client)
 	context.Rays = 0
+	context.BVHNodeTriangles = 0
 
 	context.Scene.LinkMaterials()
 	if len(context.ObjBuffer) > 0 && len(context.MtlBuffer) > 0 {
@@ -109,23 +113,47 @@ func (context *RenderContext) Initialize(rawTextureData []*[]byte) error {
 				material = context.DebugMaterial
 			}
 
+			//println("Group", group.Name, group.IndexBegin, group.IndexCount)
+
 			triangleIndex := 0
 
 			for index := group.IndexBegin; index < group.IndexBegin+group.IndexCount; index += 3 {
 				strideIndex0 := context.Object.Indices[index]
 				strideIndex1 := context.Object.Indices[index+1]
 				strideIndex2 := context.Object.Indices[index+2]
-				c0, c1, c2 := context.Object.VertexCoordinates(strideIndex0)
-				c3, c4, c5 := context.Object.VertexCoordinates(strideIndex1)
-				c6, c7, c8 := context.Object.VertexCoordinates(strideIndex2)
+
+				c0, c1, c2, err := utility.VertexCoordinates(context.Object, strideIndex0)
+				if err != nil {
+					continue
+				}
+				c3, c4, c5, err := utility.VertexCoordinates(context.Object, strideIndex1)
+				if err != nil {
+					continue
+				}
+				c6, c7, c8, err := utility.VertexCoordinates(context.Object, strideIndex2)
+				if err != nil {
+					continue
+				}
 
 				v0 := mgl32.Vec3{c0, c1, c2}
 				v1 := mgl32.Vec3{c3, c4, c5}
 				v2 := mgl32.Vec3{c6, c7, c8}
 
-				t0u, t0v := utility.TextureCoordinates(context.Object, strideIndex0)
-				t1u, t1v := utility.TextureCoordinates(context.Object, strideIndex1)
-				t2u, t2v := utility.TextureCoordinates(context.Object, strideIndex2)
+				var t0u, t0v, t1u, t1v, t2u, t2v float32
+				if context.Object.TextCoordFound {
+					t0u, t0v, err = utility.TextureCoordinates(context.Object, strideIndex0)
+					if err != nil {
+						continue
+					}
+					t1u, t1v, err = utility.TextureCoordinates(context.Object, strideIndex1)
+					if err != nil {
+						continue
+					}
+					t2u, t2v, err = utility.TextureCoordinates(context.Object, strideIndex2)
+					if err != nil {
+						continue
+					}
+				}
 
 				tri := NewTriangle(v0, v1, v2, material, triangleIndex)
 				tri.TextureCoords = [3]mgl32.Vec2{

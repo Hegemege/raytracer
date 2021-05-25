@@ -61,6 +61,7 @@ export default class Renderer extends BaseComponent {
 
     // Load presets
     await this.loadPreset("presets/cornell-box.json");
+    await this.loadPreset("presets/conference.json");
     await this.loadPreset("presets/sponza.json");
 
     // TODO: Load saved presets from localstorage?
@@ -192,6 +193,7 @@ export default class Renderer extends BaseComponent {
       Debug: false,
       UseBVH: params.useBVH,
       BVHMaxLeafSize: params.maxLeafSize,
+      BVHMaxDepth: params.maxDepth,
       Scene: {}, //this.state.sceneData,
       ObjBuffer: this.state.objData,
       MtlBuffer: this.state.mtlData,

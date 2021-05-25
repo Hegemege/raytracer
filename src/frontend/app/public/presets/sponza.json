@@ -27,6 +27,7 @@
     "saveBVH": true,
     "loadBVH": true,
     "maxLeafSize": 20,
+    "maxDepth": 16,
     "lightIntensity": 100,
     "debugLightSize": 10,
     "renderAfterInitialization": true,

@@ -2,6 +2,7 @@ package utility
 
 import (
 	"encoding/json"
+	"errors"
 	"math"
 	"math/rand"
 	"syscall/js"
@@ -95,9 +96,25 @@ func Vec3Max(v1 mgl32.Vec3, v2 mgl32.Vec3) mgl32.Vec3 {
 }
 
 // TextureCoordinates gets texture coordinates for a stride index.
-func TextureCoordinates(o *gwob.Obj, stride int) (float32, float32) {
+func TextureCoordinates(o *gwob.Obj, stride int) (float32, float32, error) {
+	offset := o.StrideOffsetTexture / 4
+	floatsPerStride := o.StrideSize / 4
+	f := offset + stride*floatsPerStride
+	max := len(o.Coord)
+	if f > max-2 {
+		return 0, 0, errors.New("overflowing vertex coord index")
+	}
+	return o.Coord[f], o.Coord[f+1], nil
+}
+
+// VertexCoordinates gets vertex coordinates for a stride index.
+func VertexCoordinates(o *gwob.Obj, stride int) (float32, float32, float32, error) {
 	offset := o.StrideOffsetPosition / 4
 	floatsPerStride := o.StrideSize / 4
 	f := offset + stride*floatsPerStride
-	return o.Coord[f+3], o.Coord[f+4]
+	max := len(o.Coord)
+	if f > max-3 {
+		return 0, 0, 0, errors.New("overflowing vertex coord index")
+	}
+	return o.Coord[f], o.Coord[f+1], o.Coord[f+2], nil
 }
