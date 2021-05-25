@@ -1,0 +1,60 @@
+{
+  "name": "sibenik",
+  "params": {
+    "width": 250,
+    "height": 250,
+    "scale": 200,
+    "x": -5,
+    "y": -8,
+    "z": 0,
+    "rx": 0,
+    "ry": 90,
+    "rz": 0,
+    "projection": 0,
+    "fieldOfView": 70,
+    "ortographicSize": 3,
+    "bounces": 3,
+    "lightSampleRays": 6,
+    "raysPerPixel": 5,
+    "sceneData": null,
+    "objData": "",
+    "mtlData": "",
+    "workerCount": 16,
+    "taskCount": 16,
+    "gammaCorrection": true,
+    "gamma": "2.2",
+    "useBVH": true,
+    "saveBVH": true,
+    "loadBVH": true,
+    "maxLeafSize": 8,
+    "maxDepth": 20,
+    "lightIntensity": 20,
+    "debugLightSize": 1,
+    "renderAfterInitialization": true,
+    "incrementalRendering": true,
+    "objectPath": "scenes/obj/sibenik/sibenik.obj",
+    "materialPath": "scenes/obj/sibenik/sibenik.mtl",
+    "texturePaths": [
+      {
+        "name": "kamen.png",
+        "path": "scenes/obj/sibenik/kamen.png"
+      },
+      {
+        "name": "kamen-bump.png",
+        "path": "scenes/obj/sibenik/kamen-bump.png"
+      },
+      {
+        "name": "KAMEN-stup.png",
+        "path": "scenes/obj/sibenik/KAMEN-stup.png"
+      },
+      {
+        "name": "mramor6x6.png",
+        "path": "scenes/obj/sibenik/mramor6x6.png"
+      },
+      {
+        "name": "mramor6x6-bump.png",
+        "path": "scenes/obj/sibenik/mramor6x6-bump.png"
+      }
+    ]
+  }
+}

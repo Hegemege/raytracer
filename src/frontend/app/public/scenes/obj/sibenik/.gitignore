@@ -1,0 +1,5 @@
+# Fetch the model from https://casual-effects.com/data/
+*.obj
+*.png
+*.mtl
+*.txt

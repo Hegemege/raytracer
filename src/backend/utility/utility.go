@@ -2,7 +2,6 @@ package utility
 
 import (
 	"encoding/json"
-	"errors"
 	"math"
 	"math/rand"
 	"syscall/js"
@@ -100,10 +99,7 @@ func TextureCoordinates(o *gwob.Obj, stride int) (float32, float32, error) {
 	offset := o.StrideOffsetTexture / 4
 	floatsPerStride := o.StrideSize / 4
 	f := offset + stride*floatsPerStride
-	max := len(o.Coord)
-	if f > max-2 {
-		return 0, 0, errors.New("overflowing vertex coord index")
-	}
+
 	return o.Coord[f], o.Coord[f+1], nil
 }
 
@@ -112,9 +108,6 @@ func VertexCoordinates(o *gwob.Obj, stride int) (float32, float32, float32, erro
 	offset := o.StrideOffsetPosition / 4
 	floatsPerStride := o.StrideSize / 4
 	f := offset + stride*floatsPerStride
-	max := len(o.Coord)
-	if f > max-3 {
-		return 0, 0, 0, errors.New("overflowing vertex coord index")
-	}
+
 	return o.Coord[f], o.Coord[f+1], o.Coord[f+2], nil
 }

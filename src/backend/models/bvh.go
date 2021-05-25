@@ -67,7 +67,7 @@ func buildBVHNode(context *RenderContext, triangles []*Triangle, startIndex int,
 	*index = *index + 1
 
 	// Calculate bounds for the node
-	min, max := GetTriangleBounds(triangles[startIndex:endIndex])
+	min, max := GetTriangleBounds(triangles[startIndex : endIndex+1])
 	node.Bounds = NewAABBMinMax(min, max)
 
 	triCount := endIndex - startIndex + 1

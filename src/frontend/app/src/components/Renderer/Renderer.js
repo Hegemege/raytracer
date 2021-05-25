@@ -63,6 +63,7 @@ export default class Renderer extends BaseComponent {
     await this.loadPreset("presets/cornell-box.json");
     await this.loadPreset("presets/conference.json");
     await this.loadPreset("presets/sponza.json");
+    await this.loadPreset("presets/sibenik.json");
 
     // TODO: Load saved presets from localstorage?
 

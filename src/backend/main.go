@@ -10,6 +10,7 @@ import (
 	"raytracer/models"
 	"raytracer/process"
 	"raytracer/utility"
+	"runtime/debug"
 	"syscall/js"
 
 	"github.com/go-gl/mathgl/mgl32"
@@ -21,6 +22,8 @@ var activeRenderKey int = -1
 
 func main() {
 	println("Go WebAssembly main")
+
+	debug.SetGCPercent(20)
 
 	js.Global().Set("initialize", js.FuncOf(initialize))
 	js.Global().Set("buildBVH", js.FuncOf(buildBVH))
@@ -54,6 +57,8 @@ func initialize(this js.Value, args []js.Value) interface{} {
 	utility.ProgressUpdate(0.0, "RenderContext.Initialize", -1, 0)
 	context.Initialize(rawTextureData)
 	utility.ProgressUpdate(1.0, "RenderContext.Initialize", -1, 0)
+
+	rawTextureData = nil
 	return nil
 }
 
