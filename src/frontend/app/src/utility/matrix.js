@@ -2,6 +2,27 @@ export function translate(x, y, z) {
   return [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, x, y, z, 1];
 }
 
+export function rotate(x, y, z) {
+  return [
+    Math.cos(z) * Math.cos(y),
+    Math.cos(z) * Math.sin(y) * Math.sin(x) - Math.sin(z) * Math.cos(x),
+    Math.cos(z) * Math.sin(y) * Math.cos(x) + Math.sin(z) * Math.sin(x),
+    0,
+    Math.sin(z) * Math.cos(y),
+    Math.sin(z) * Math.sin(y) * Math.sin(x) + Math.cos(z) * Math.cos(x),
+    Math.sin(z) * Math.sin(y) * Math.cos(x) - Math.cos(z) * Math.sin(x),
+    0,
+    -Math.sin(y),
+    Math.cos(y) * Math.sin(x),
+    Math.cos(y) * Math.cos(x),
+    0,
+    0,
+    0,
+    0,
+    1,
+  ];
+}
+
 export function rotateAroundXAxis(a) {
   return [
     1,

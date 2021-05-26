@@ -19,6 +19,7 @@ export default class RendererParams extends BaseComponent {
         ry: 0,
         rz: 0,
         projection: 0,
+        projectionPlaneDistance: 1,
         fieldOfView: 45,
         ortographicSize: 3,
         bounces: 10,
@@ -183,7 +184,7 @@ export default class RendererParams extends BaseComponent {
             <Form.Group controlId="formWidth" className="right-margin">
               <Form.Label>Width px</Form.Label>
               <Form.Control
-                htmlSize="6"
+                htmlSize="4"
                 type="text"
                 label="Width"
                 value={this.state.params.width}
@@ -194,7 +195,7 @@ export default class RendererParams extends BaseComponent {
             <Form.Group controlId="formHeight" className="right-margin">
               <Form.Label>Height px</Form.Label>
               <Form.Control
-                htmlSize="6"
+                htmlSize="4"
                 type="text"
                 label="Height"
                 value={this.state.params.height}
@@ -205,7 +206,7 @@ export default class RendererParams extends BaseComponent {
             <Form.Group controlId="formScale" className="right-margin">
               <Form.Label>Scale %</Form.Label>
               <Form.Control
-                htmlSize="6"
+                htmlSize="4"
                 type="text"
                 label="Scale"
                 value={this.state.params.scale}
@@ -224,6 +225,22 @@ export default class RendererParams extends BaseComponent {
                   <option key={index}>{item}</option>
                 ))}
               </Form.Control>
+            </Form.Group>
+
+            <Form.Group
+              controlId="formProjectionPlaneDistance"
+              className="right-margin"
+            >
+              <Form.Label>Proj. Distance</Form.Label>
+              <Form.Control
+                htmlSize="3"
+                type="text"
+                label="Scale"
+                value={this.state.params.projectionPlaneDistance}
+                onChange={(e) =>
+                  this.handleFloatParamChanged(e, "projectionPlaneDistance")
+                }
+              />
             </Form.Group>
 
             <Form.Group
@@ -272,7 +289,7 @@ export default class RendererParams extends BaseComponent {
             <Form.Group controlId="formBounces" className="right-margin">
               <Form.Label>Bounces</Form.Label>
               <Form.Control
-                htmlSize="6"
+                htmlSize="5"
                 type="text"
                 label="Bounces"
                 value={this.state.params.bounces}
@@ -300,7 +317,7 @@ export default class RendererParams extends BaseComponent {
             <Form.Group controlId="formX" className="right-margin">
               <Form.Label>X</Form.Label>
               <Form.Control
-                htmlSize="6"
+                htmlSize="4"
                 type="text"
                 label="Scale"
                 value={this.state.params.x}
@@ -310,7 +327,7 @@ export default class RendererParams extends BaseComponent {
             <Form.Group controlId="formY" className="right-margin">
               <Form.Label>Y</Form.Label>
               <Form.Control
-                htmlSize="6"
+                htmlSize="4"
                 type="text"
                 label="Scale"
                 value={this.state.params.y}
@@ -320,7 +337,7 @@ export default class RendererParams extends BaseComponent {
             <Form.Group controlId="formZ" className="right-margin">
               <Form.Label>Z</Form.Label>
               <Form.Control
-                htmlSize="6"
+                htmlSize="4"
                 type="text"
                 label="Scale"
                 value={this.state.params.z}
@@ -331,7 +348,7 @@ export default class RendererParams extends BaseComponent {
             <Form.Group controlId="formrX" className="right-margin">
               <Form.Label>rX</Form.Label>
               <Form.Control
-                htmlSize="6"
+                htmlSize="4"
                 type="text"
                 label="Scale"
                 value={this.state.params.rx}
@@ -341,7 +358,7 @@ export default class RendererParams extends BaseComponent {
             <Form.Group controlId="formrY" className="right-margin">
               <Form.Label>rY</Form.Label>
               <Form.Control
-                htmlSize="6"
+                htmlSize="4"
                 type="text"
                 label="Scale"
                 value={this.state.params.ry}
@@ -351,7 +368,7 @@ export default class RendererParams extends BaseComponent {
             <Form.Group controlId="formrZ" className="right-margin">
               <Form.Label>rZ</Form.Label>
               <Form.Control
-                htmlSize="6"
+                htmlSize="4"
                 type="text"
                 label="Scale"
                 value={this.state.params.rz}

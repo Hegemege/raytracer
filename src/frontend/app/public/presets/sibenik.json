@@ -11,6 +11,7 @@
     "ry": 90,
     "rz": 0,
     "projection": 0,
+    "projectionPlaneDistance": 0.5,
     "fieldOfView": 70,
     "ortographicSize": 3,
     "bounces": 3,

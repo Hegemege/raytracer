@@ -11,9 +11,10 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
 import {
   translate,
-  rotateAroundXAxis,
-  rotateAroundYAxis,
-  rotateAroundZAxis,
+  rotate,
+  //rotateAroundXAxis,
+  //rotateAroundYAxis,
+  //rotateAroundZAxis,
   multiplyMatrices,
 } from "../../utility/matrix";
 
@@ -368,9 +369,11 @@ export default class Renderer extends BaseComponent {
     let ry = (parseFloat(params.ry) * Math.PI) / 180.0;
     let rz = (parseFloat(params.rz) * Math.PI) / 180.0;
     let cameraTransform = translate(x, y, z);
-    cameraTransform = multiplyMatrices(cameraTransform, rotateAroundXAxis(rx));
-    cameraTransform = multiplyMatrices(cameraTransform, rotateAroundYAxis(ry));
-    cameraTransform = multiplyMatrices(cameraTransform, rotateAroundZAxis(rz));
+    let cameraRotate = rotate(rx, ry, rz);
+    cameraTransform = multiplyMatrices(cameraTransform, cameraRotate);
+    //cameraTransform = multiplyMatrices(cameraTransform, rotateAroundZAxis(rz));
+    //cameraTransform = multiplyMatrices(cameraTransform, rotateAroundYAxis(ry));
+    //cameraTransform = multiplyMatrices(cameraTransform, rotateAroundXAxis(rx));
 
     // Generate tasks of roughly equal size. Last row/column can
     // be a few pixels larger to accommodate any resolution
@@ -393,7 +396,7 @@ export default class Renderer extends BaseComponent {
         let task = {
           Camera: {
             Transform: cameraTransform,
-            ProjectionPlaneDistance: 0.01,
+            ProjectionPlaneDistance: parseFloat(params.projectionPlaneDistance),
             RaysPerPixel: params.raysPerPixel,
             Projection: params.projection,
             OrtographicSize: params.ortographicSize,
