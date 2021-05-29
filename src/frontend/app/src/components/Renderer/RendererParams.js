@@ -9,22 +9,22 @@ export default class RendererParams extends BaseComponent {
     this.state = {
       presetName: undefined,
       params: {
-        width: 100,
-        height: 100,
-        scale: 500,
-        x: -0.225,
-        y: 2.55,
-        z: 6,
+        width: 500,
+        height: 500,
+        scale: 100,
+        x: 0,
+        y: 0,
+        z: 0,
         rx: 0,
         ry: 0,
         rz: 0,
         projection: 0,
         projectionPlaneDistance: 1,
-        fieldOfView: 45,
-        ortographicSize: 3,
-        bounces: 10,
-        lightSampleRays: 4,
-        raysPerPixel: 10,
+        fieldOfView: 60,
+        ortographicSize: 10,
+        bounces: 4,
+        lightSampleRays: 8,
+        raysPerPixel: 5,
         workerCount: 16,
         taskCount: 16,
         rngSeed: this.getNewSeed(),
@@ -36,9 +36,20 @@ export default class RendererParams extends BaseComponent {
         maxLeafSize: 6,
         maxDepth: 20,
         lightIntensity: 100,
-        debugLightSize: 1.0,
         renderAfterInitialization: true,
         incrementalRendering: false,
+        forceDebugLight: false,
+        debugLightAtCamera: true,
+        debugLightSize: 1.0,
+        debugLightX: 0,
+        debugLightY: 0,
+        debugLightZ: 0,
+        debugLightRX: 0,
+        debugLightRY: 0,
+        debugLightRZ: 0,
+        debugLightCR: 255,
+        debugLightCG: 255,
+        debugLightCB: 255,
         // Note: when adding properties, add them to the preset.json files too
       },
     };
@@ -66,6 +77,7 @@ export default class RendererParams extends BaseComponent {
       ...this.state,
       paramKey: this.props.paramKey,
       params: {
+        ...this.state.params,
         ...this.props.params,
         rngSeed: this.props.params.rngSeed
           ? this.props.params.rngSeed
@@ -176,49 +188,102 @@ export default class RendererParams extends BaseComponent {
     return Math.floor(Math.random() * Number.MAX_SAFE_INTEGER);
   };
 
+  getIntParam = (field) => {
+    let param = this.state.params[field];
+    if (!param) {
+      return 0; // Default value
+    }
+
+    return param;
+  };
+
+  getFloatParam = (field) => {
+    let param = this.state.params[field];
+    if (!param) {
+      return 0; // Default value
+    }
+
+    return param;
+  };
+
+  getBoolParam = (field) => {
+    let param = this.state.params[field];
+    if (!param) {
+      return false; // Default value
+    }
+
+    return param;
+  };
+
+  renderParam(field, type, label, size, disabled) {
+    let controlId = `form${field}`;
+
+    if (type === "int") {
+      let value = this.getIntParam(field);
+      return (
+        <Form.Group controlId={controlId} className="right-margin">
+          <Form.Label>{label}</Form.Label>
+          <Form.Control
+            disabled={disabled}
+            htmlSize={size}
+            type="text"
+            label={label}
+            value={value}
+            onChange={(e) => this.handleIntParamChanged(e, field)}
+          />
+        </Form.Group>
+      );
+    } else if (type === "float") {
+      let value = this.getFloatParam(field);
+      return (
+        <Form.Group controlId={controlId} className="right-margin">
+          <Form.Label>{label}</Form.Label>
+          <Form.Control
+            disabled={disabled}
+            htmlSize={size}
+            type="text"
+            label={label}
+            value={value}
+            onChange={(e) => this.handleFloatParamChanged(e, field)}
+          />
+        </Form.Group>
+      );
+    } else if (type === "bool") {
+      let value = this.getBoolParam(field);
+      return (
+        <Form.Group controlId={controlId} className="right-margin">
+          <Form.Check
+            disabled={disabled}
+            type="checkbox"
+            label={label}
+            checked={value}
+            onChange={(e) => this.handleBoolParamChanged(e, field)}
+          />
+        </Form.Group>
+      );
+    } else {
+      return null;
+    }
+  }
+
   render() {
+    if (!this.state.params) {
+      return null;
+    }
+
     return (
       <Container>
         <Form>
           <Row className="param-row">
-            <Form.Group controlId="formWidth" className="right-margin">
-              <Form.Label>Width px</Form.Label>
-              <Form.Control
-                htmlSize="4"
-                type="text"
-                label="Width"
-                value={this.state.params.width}
-                onChange={(e) => this.handleIntParamChanged(e, "width")}
-              />
-            </Form.Group>
-
-            <Form.Group controlId="formHeight" className="right-margin">
-              <Form.Label>Height px</Form.Label>
-              <Form.Control
-                htmlSize="4"
-                type="text"
-                label="Height"
-                value={this.state.params.height}
-                onChange={(e) => this.handleIntParamChanged(e, "height")}
-              />
-            </Form.Group>
-
-            <Form.Group controlId="formScale" className="right-margin">
-              <Form.Label>Scale %</Form.Label>
-              <Form.Control
-                htmlSize="4"
-                type="text"
-                label="Scale"
-                value={this.state.params.scale}
-                onChange={(e) => this.handleIntParamChanged(e, "scale")}
-              />
-            </Form.Group>
+            {this.renderParam("width", "int", "Width px", 4)}
+            {this.renderParam("height", "int", "Height px", 4)}
+            {this.renderParam("scale", "int", "Scale %", 4)}
 
             <Form.Group controlId="formProjection" className="right-margin">
               <Form.Label>Projection</Form.Label>
               <Form.Control
                 as="select"
-                value={this.projectionMap[this.state.params.projection]}
+                value={this.projectionMap[this.getIntParam("projection")]}
                 onChange={this.handleProjectionChanged}
               >
                 {this.projectionMap.map((item, index) => (
@@ -227,221 +292,95 @@ export default class RendererParams extends BaseComponent {
               </Form.Control>
             </Form.Group>
 
+            {this.renderParam(
+              "projectionPlaneDistance",
+              "float",
+              "Proj. Distance",
+              4
+            )}
+
+            {this.getIntParam("projection") === 0 &&
+              this.renderParam("fieldOfView", "int", "Field of View", 6)}
+            {this.getIntParam("projection") === 1 &&
+              this.renderParam("ortographicSize", "int", "Ortographic Size", 6)}
+
+            {this.renderParam("raysPerPixel", "int", "Rays Per Pixel", 6)}
+            {this.renderParam("bounces", "int", "Bounces", 4)}
+            {this.renderParam("lightSampleRays", "int", "Light Sample Rays", 6)}
+          </Row>
+
+          <Row className="param-row">
+            <Form.Label className="header">Camera</Form.Label>
+            {this.renderParam("x", "float", "X", 4)}
+            {this.renderParam("y", "float", "Y", 4)}
+            {this.renderParam("z", "float", "Z", 4)}
+            {this.renderParam("rx", "float", "rX", 4)}
+            {this.renderParam("ry", "float", "rY", 4)}
+            {this.renderParam("rz", "float", "rZ", 4)}
+
+            {this.renderParam("lightIntensity", "float", "Light Intensity", 6)}
+
             <Form.Group
-              controlId="formProjectionPlaneDistance"
+              controlId="formCheckboxDebugLightToggle"
               className="right-margin"
             >
-              <Form.Label>Proj. Distance</Form.Label>
-              <Form.Control
-                htmlSize="3"
-                type="text"
-                label="Scale"
-                value={this.state.params.projectionPlaneDistance}
+              <Form.Label>Debug Light</Form.Label>
+              <Form.Check
+                style={{ marginTop: "-10px" }}
+                id="formCheckboxForceDebugLight"
+                type="checkbox"
+                label="Force Debug Light"
+                checked={this.getBoolParam("forceDebugLight")}
                 onChange={(e) =>
-                  this.handleFloatParamChanged(e, "projectionPlaneDistance")
+                  this.handleBoolParamChanged(e, "forceDebugLight")
                 }
               />
-            </Form.Group>
-
-            <Form.Group
-              hidden={this.state.params.projection !== 0}
-              controlId="formFoV"
-              className="right-margin"
-            >
-              <Form.Label>Field of View</Form.Label>
-              <Form.Control
-                htmlSize="6"
-                type="text"
-                label="Height"
-                value={this.state.params.fieldOfView}
-                onChange={(e) => this.handleIntParamChanged(e, "fieldOfView")}
-              />
-            </Form.Group>
-
-            <Form.Group
-              hidden={this.state.params.projection !== 1}
-              controlId="formOrtographicSize"
-              className="right-margin"
-            >
-              <Form.Label>Ortographic Size</Form.Label>
-              <Form.Control
-                htmlSize="6"
-                type="text"
-                label="Height"
-                value={this.state.params.ortographicSize}
+              <Form.Check
+                disabled={!this.getBoolParam("forceDebugLight")}
+                id="formCheckboxDebugLightAtCamera"
+                type="checkbox"
+                label="Debug Light At Camera"
+                checked={this.getBoolParam("debugLightAtCamera")}
                 onChange={(e) =>
-                  this.handleIntParamChanged(e, "ortographicSize")
-                }
-              />
-            </Form.Group>
-
-            <Form.Group controlId="formRaysPerPixel" className="right-margin">
-              <Form.Label>Rays Per Pixel</Form.Label>
-              <Form.Control
-                htmlSize="6"
-                type="text"
-                label="Rays Per Pixel"
-                value={this.state.params.raysPerPixel}
-                onChange={(e) => this.handleIntParamChanged(e, "raysPerPixel")}
-              />
-            </Form.Group>
-
-            <Form.Group controlId="formBounces" className="right-margin">
-              <Form.Label>Bounces</Form.Label>
-              <Form.Control
-                htmlSize="5"
-                type="text"
-                label="Bounces"
-                value={this.state.params.bounces}
-                onChange={(e) => this.handleIntParamChanged(e, "bounces")}
-              />
-            </Form.Group>
-
-            <Form.Group
-              controlId="formLightSampleRays"
-              className="right-margin"
-            >
-              <Form.Label>Light Sample Rays</Form.Label>
-              <Form.Control
-                htmlSize="6"
-                type="text"
-                label="Light Sample Rays"
-                value={this.state.params.lightSampleRays}
-                onChange={(e) =>
-                  this.handleIntParamChanged(e, "lightSampleRays")
+                  this.handleBoolParamChanged(e, "debugLightAtCamera")
                 }
               />
             </Form.Group>
           </Row>
-          <Row className="param-row">
-            <Form.Group controlId="formX" className="right-margin">
-              <Form.Label>X</Form.Label>
-              <Form.Control
-                htmlSize="4"
-                type="text"
-                label="Scale"
-                value={this.state.params.x}
-                onChange={(e) => this.handleFloatParamChanged(e, "x")}
-              />
-            </Form.Group>
-            <Form.Group controlId="formY" className="right-margin">
-              <Form.Label>Y</Form.Label>
-              <Form.Control
-                htmlSize="4"
-                type="text"
-                label="Scale"
-                value={this.state.params.y}
-                onChange={(e) => this.handleFloatParamChanged(e, "y")}
-              />
-            </Form.Group>
-            <Form.Group controlId="formZ" className="right-margin">
-              <Form.Label>Z</Form.Label>
-              <Form.Control
-                htmlSize="4"
-                type="text"
-                label="Scale"
-                value={this.state.params.z}
-                onChange={(e) => this.handleFloatParamChanged(e, "z")}
-              />
-            </Form.Group>
-
-            <Form.Group controlId="formrX" className="right-margin">
-              <Form.Label>rX</Form.Label>
-              <Form.Control
-                htmlSize="4"
-                type="text"
-                label="Scale"
-                value={this.state.params.rx}
-                onChange={(e) => this.handleFloatParamChanged(e, "rx")}
-              />
-            </Form.Group>
-            <Form.Group controlId="formrY" className="right-margin">
-              <Form.Label>rY</Form.Label>
-              <Form.Control
-                htmlSize="4"
-                type="text"
-                label="Scale"
-                value={this.state.params.ry}
-                onChange={(e) => this.handleFloatParamChanged(e, "ry")}
-              />
-            </Form.Group>
-            <Form.Group controlId="formrZ" className="right-margin">
-              <Form.Label>rZ</Form.Label>
-              <Form.Control
-                htmlSize="4"
-                type="text"
-                label="Scale"
-                value={this.state.params.rz}
-                onChange={(e) => this.handleFloatParamChanged(e, "rz")}
-              />
-            </Form.Group>
-
-            <Form.Group controlId="formLightIntensity" className="right-margin">
-              <Form.Label>Light Intensity</Form.Label>
-              <Form.Control
-                htmlSize="6"
-                type="text"
-                label="Light Intensity"
-                value={this.state.params.lightIntensity}
-                onChange={(e) =>
-                  this.handleFloatParamChanged(e, "lightIntensity")
-                }
-              />
-            </Form.Group>
-
-            <Form.Group controlId="formDebugLightSize" className="right-margin">
-              <Form.Label>Debug Light Size</Form.Label>
-              <Form.Control
-                htmlSize="6"
-                type="text"
-                label="Debug Light Size"
-                value={this.state.params.debugLightSize}
-                onChange={(e) =>
-                  this.handleFloatParamChanged(e, "debugLightSize")
-                }
-              />
-            </Form.Group>
+          <Row
+            className="param-row"
+            hidden={
+              this.getBoolParam("debugLightAtCamera") ||
+              !this.getBoolParam("forceDebugLight")
+            }
+          >
+            <Form.Label className="header">Debug Light</Form.Label>
+            {this.renderParam("debugLightX", "float", "X", 4)}
+            {this.renderParam("debugLightY", "float", "Y", 4)}
+            {this.renderParam("debugLightZ", "float", "Z", 4)}
+            {this.renderParam("debugLightRX", "float", "rX", 4)}
+            {this.renderParam("debugLightRY", "float", "rY", 4)}
+            {this.renderParam("debugLightRZ", "float", "rZ", 4)}
+            {this.renderParam("debugLightSize", "float", "Debug Light Size", 6)}
           </Row>
-          <Row className="param-row">
-            <Form.Group controlId="formWorkerCount" className="right-margin">
-              <Form.Label>Workers</Form.Label>
-              <Form.Control
-                htmlSize="6"
-                type="text"
-                label="Workers"
-                value={this.state.params.workerCount}
-                onChange={(e) => this.handleIntParamChanged(e, "workerCount")}
-              />
-            </Form.Group>
-            <Form.Group controlId="formTaskCount" className="right-margin">
-              <Form.Label>
-                Tasks (n<sup>2</sup>)
-              </Form.Label>
-              <Form.Control
-                disabled={this.state.params.incrementalRendering}
-                htmlSize="6"
-                type="text"
-                label="Tasks"
-                value={this.state.params.taskCount}
-                onChange={(e) => this.handleIntParamChanged(e, "taskCount")}
-              />
-            </Form.Group>
+          <Row className="param-row bottom-align">
+            {this.renderParam("workerCount", "int", "Workers", 6)}
+            {this.renderParam(
+              "taskCount",
+              "int",
+              "Tasks (n^2)",
+              6,
+              this.state.params.incrementalRendering === true
+            )}
 
-            <Form.Group controlId="formRngSeed" className="right-margin">
-              <Form.Label>RNG Seed</Form.Label>
-              <Form.Control
-                htmlSize="22"
-                type="text"
-                label="Tasks"
-                value={this.state.params.rngSeed}
-                onChange={(e) => this.handleIntParamChanged(e, "rngSeed")}
-              />
-            </Form.Group>
+            {this.renderParam("rngSeed", "int", "RNG Seed", 22)}
+
             <Form.Group controlId="formGamma" className="right-margin">
               <Form.Check
+                id="formCheckboxGammaCorrection"
                 type="checkbox"
                 label="Gamma correction"
-                checked={this.state.params.gammaCorrection}
+                checked={this.getBoolParam("gammaCorrection")}
                 onChange={(e) =>
                   this.handleBoolParamChanged(e, "gammaCorrection")
                 }
@@ -451,15 +390,16 @@ export default class RendererParams extends BaseComponent {
                 htmlSize="6"
                 type="text"
                 label="Gamma"
-                value={this.state.params.gamma}
+                value={this.getFloatParam("gamma")}
                 onChange={(e) => this.handleFloatParamChanged(e, "gamma")}
               />
             </Form.Group>
             <Form.Group controlId="formBVHSettings" className="right-margin">
               <Form.Check
+                id="formCheckboxUseBVH"
                 type="checkbox"
                 label="Use BVH"
-                checked={this.state.params.useBVH}
+                checked={this.getBoolParam("useBVH")}
                 onChange={(e) => this.handleBoolParamChanged(e, "useBVH")}
               />
               <Form.Label>Max Leaf Tris</Form.Label>
@@ -467,7 +407,7 @@ export default class RendererParams extends BaseComponent {
                 htmlSize="3"
                 type="text"
                 label="Max Leaf Tris"
-                value={this.state.params.maxLeafSize}
+                value={this.getIntParam("maxLeafSize")}
                 onChange={(e) => this.handleIntParamChanged(e, "maxLeafSize")}
               />
             </Form.Group>
@@ -477,7 +417,7 @@ export default class RendererParams extends BaseComponent {
                 htmlSize="3"
                 type="text"
                 label="Max Depth"
-                value={this.state.params.maxDepth}
+                value={this.getIntParam("maxDepth")}
                 onChange={(e) => this.handleIntParamChanged(e, "maxDepth")}
               />
             </Form.Group>
@@ -487,46 +427,32 @@ export default class RendererParams extends BaseComponent {
             >
               <Form.Label>Caching</Form.Label>
               <Form.Check
+                id="formCheckboxSaveBVH"
                 type="checkbox"
                 label="Save BVH"
-                checked={this.state.params.saveBVH}
+                checked={this.getBoolParam("saveBVH")}
                 onChange={(e) => this.handleBoolParamChanged(e, "saveBVH")}
               />
               <Form.Check
+                id="formCheckboxLoadBVH"
                 type="checkbox"
                 label="Load BVH"
-                checked={this.state.params.loadBVH}
+                checked={this.getBoolParam("loadBVH")}
                 onChange={(e) => this.handleBoolParamChanged(e, "loadBVH")}
               />
             </Form.Group>
           </Row>
-          <Row>
-            <Form.Group
-              controlId="formCheckboxRenderAfterInitialization"
-              className="right-margin"
-            >
-              <Form.Check
-                type="checkbox"
-                label="Render after initialization"
-                checked={this.state.params.renderAfterInitialization}
-                onChange={(e) =>
-                  this.handleBoolParamChanged(e, "renderAfterInitialization")
-                }
-              />
-            </Form.Group>
-            <Form.Group
-              controlId="formCheckboxIncrementalRendering"
-              className="right-margin"
-            >
-              <Form.Check
-                type="checkbox"
-                label="Incremental rendering"
-                checked={this.state.params.incrementalRendering}
-                onChange={(e) =>
-                  this.handleBoolParamChanged(e, "incrementalRendering")
-                }
-              />
-            </Form.Group>
+          <Row className="param-row bottom-align">
+            {this.renderParam(
+              "renderAfterInitialization",
+              "bool",
+              "Render after initialization"
+            )}
+            {this.renderParam(
+              "incrementalRendering",
+              "bool",
+              "Incremental rendering"
+            )}
           </Row>
           <Row>
             <Button

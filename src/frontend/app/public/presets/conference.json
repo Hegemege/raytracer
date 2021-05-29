@@ -33,6 +33,8 @@
     "debugLightSize": 100,
     "renderAfterInitialization": true,
     "incrementalRendering": true,
+    "forceDebugLight": true,
+    "debugLightAtCamera": true,
     "objectPath": "scenes/obj/conference/conference.obj",
     "materialPath": "scenes/obj/conference/conference.mtl",
     "texturePaths": []

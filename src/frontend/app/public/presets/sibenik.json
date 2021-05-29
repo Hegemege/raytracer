@@ -33,6 +33,8 @@
     "debugLightSize": 1,
     "renderAfterInitialization": true,
     "incrementalRendering": true,
+    "forceDebugLight": true,
+    "debugLightAtCamera": true,
     "objectPath": "scenes/obj/sibenik/sibenik.obj",
     "materialPath": "scenes/obj/sibenik/sibenik.mtl",
     "texturePaths": [

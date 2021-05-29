@@ -371,9 +371,19 @@ export default class Renderer extends BaseComponent {
     let cameraTransform = translate(x, y, z);
     let cameraRotate = rotate(rx, ry, rz);
     cameraTransform = multiplyMatrices(cameraTransform, cameraRotate);
-    //cameraTransform = multiplyMatrices(cameraTransform, rotateAroundZAxis(rz));
-    //cameraTransform = multiplyMatrices(cameraTransform, rotateAroundYAxis(ry));
-    //cameraTransform = multiplyMatrices(cameraTransform, rotateAroundXAxis(rx));
+
+    let lx = parseFloat(params.debugLightX);
+    let ly = parseFloat(params.debugLightY);
+    let lz = parseFloat(params.debugLightZ);
+    let lrx = (parseFloat(params.debugLightRX) * Math.PI) / 180.0;
+    let lry = (parseFloat(params.debugLightRY) * Math.PI) / 180.0;
+    let lrz = (parseFloat(params.debugLightRZ) * Math.PI) / 180.0;
+    let debugLightTransform = translate(lx, ly, lz);
+    let debugLightRotate = rotate(lrx, lry, lrz);
+    debugLightTransform = multiplyMatrices(
+      debugLightTransform,
+      debugLightRotate
+    );
 
     // Generate tasks of roughly equal size. Last row/column can
     // be a few pixels larger to accommodate any resolution
@@ -419,6 +429,9 @@ export default class Renderer extends BaseComponent {
             LightSampleRays: params.lightSampleRays,
             LightIntensity: parseFloat(params.lightIntensity),
             DebugLightSize: parseFloat(params.debugLightSize),
+            ForceDebugLight: params.forceDebugLight,
+            DebugLightAtCamera: params.debugLightAtCamera,
+            DebugLightTransform: debugLightTransform,
           },
           IncrementalRendering: params.incrementalRendering,
         };

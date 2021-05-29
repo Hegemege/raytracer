@@ -21,8 +21,16 @@
 }
 
 .param-row {
-  display: flex;
-  align-items: flex-end;
+  &.bottom-align {
+    display: flex;
+    align-items: flex-end;
+  }
+  & .header {
+    position: relative;
+    left: -75px;
+    display: inline;
+    width: 0;
+  }
 }
 
 .render-stats {

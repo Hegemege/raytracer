@@ -254,9 +254,16 @@ func (pass *RenderPass) Initialize(context *RenderContext) {
 		pass.Camera.Transform = mgl32.Ident4()
 	}
 
-	if context.useDebugLight {
-		// Create debug light
-		transform := pass.Camera.Transform
+	if context.useDebugLight || pass.Settings.ForceDebugLight {
+		var transform mgl32.Mat4
+		if pass.Settings.DebugLightAtCamera {
+			// Create debug light at camera
+			transform = pass.Camera.Transform
+		} else {
+			// Create debug light at given position
+			transform = pass.Settings.DebugLightTransform
+		}
+
 		normal := mgl32.TransformCoordinate(mgl32.Vec3{0, 0, -1}, transform).Sub(transform.Col(3).Vec3())
 		size := mgl32.Vec2{pass.Settings.DebugLightSize, pass.Settings.DebugLightSize}
 		emission := mgl32.Vec3{1, 1, 1}.Mul(pass.Settings.LightIntensity)
